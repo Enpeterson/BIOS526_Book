@@ -1,0 +1,14 @@
+name: bios526_book2
+title: BIOS526_Book
+username: epeterson_2010
+account: epeterson_2010
+server: bookdown.org
+hostUrl: https://bookdown.org/__api__
+appId: 15460
+bundleId: 107463
+url: https://bookdown.org/epeterson_2010/bios526_book2/
+version: 1
+quarto_version: 1.5.57
+quarto_engines: markdown, knitr
+asMultiple: FALSE
+asStatic: FALSE

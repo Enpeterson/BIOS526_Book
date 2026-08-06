@@ -1,0 +1,687 @@
+# Module 3A Marginal Models {.unnumbered}
+
+```{r, hide =T, echo=F, message = F}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+library(dplyr)
+library(glmnet)
+library(lme4)
+library(ggplot2)
+```
+
+**Readings**
+
+-   A useful reference: Halekoh, I., S. Hojsgaard, and J. Yan. *The R Package geepack for Generalized Estimating Equations*. Journal of Statistical Software. 2006.
+
+-   Informal Overview: <https://rlbarter.github.io/Practical-Statistics/2017/05/10/generalized-estimating-equations-gee/>
+
+**Basic Concept**
+
+-   Weighted and generalized least squares
+
+-   Estimating equations
+
+-   Marginal correlation structures
+
+-   Robust standard errors
+
+`r colorize("Foundations for Generalized Estimating Equations covered in Module 3B.", "blue")`
+
+## Weighted Least Squares
+
+### Motivation and Examples
+
+::: {.callout-important .illustration style="color: red"}
+## Motivation:
+
+**Marginal Models**: assess population-level associations in the presence of heteroscedastic and/or correlated errors without requiring assumptions about subject-specific random effects.
+
+-   Longitudinal data
+-   Clustered data
+-   Multilevel data
+
+For example, suppose we have a linear regression problem give below:
+
+$$
+\mathbf{y} = \mathbf{X} \beta + \epsilon, \quad \epsilon \sim N(0, \mathbf{V})
+$$
+
+Here we assume the [residual covariance matrix]{.underline} $\mathbf{V}$ [is known and diagonal.]{.underline} meaning there are non-constant errors across units.
+
+$$
+\mathbf{V} = \begin{bmatrix}
+v_1 & 0 & ... & 0 \\
+0 & v_2 & ... & 0 \\
+\vdots & \ddots & \ddots & \vdots\\
+0 & ... & ... & v_N \end{bmatrix}
+$$
+
+We are interested in learning the **population-level associations** between $\mathbf{y}$ and $\mathbf{X}$ across $n$ subjects, i.e., How can we estimate $\hat{\beta}$ when errors are heteroscedastic (unequal variances across units)?
+:::
+
+#### Motivating Example: Revisiting TLC
+
+The Treatment of Lead-Exposed Children (TLC) was examined using a placebo-controlled randomized study of succimer (a chelating agent) in children with blood lead levels of 20-44 micrograms/dL. These data consist of four repeated measurements of blood lead levels obtained at baseline (or week 0) , week 1, week 4, and week 6 on 100 children who were randomly assigned to chelation treament with succimer or placebo.
+
+| Variable    | Description          |
+|-------------|----------------------|
+| `id`        | child identifier     |
+| `treatment` | succimer or placebo  |
+| `week`      | measurement week     |
+| `lead`      | lead level (outcome) |
+
+```{r, message =F, warning = F}
+library(dplyr)
+library(ggplot2)
+library(nlme)        # gls(), varIdent(), corAR1(), corCompSymm()
+library(sandwich)    # vcovHC(), vcovCL()
+library(lmtest)      # coeftest()
+library(clubSandwich) # cluster-robust SEs for gls/lme
+
+tlcdata <- readRDS("data/tlc.RDS") %>%
+  mutate(
+    treatment = factor(treatment),          # succimer / placebo
+    week_f    = factor(week, ordered = TRUE),
+    week_num  = as.numeric(as.character(week)) # for AR(1) correlation
+  )
+head(tlcdata)
+```
+
+**We are interested in assessing the population-level effect of** `treatment` **on the outcome of lead levels**.
+
+------------------------------------------------------------------------
+
+#### Why Not OLS/LMM? [The Wrong Tool for the Job]{.underline}
+
+(1) **OLS**: If we ignore clustering and fit the standard OLS model:
+
+$$
+y_{ij} = \beta_0 + \beta_1 \text{trt}_i + \beta_2 \text{week}_j + \epsilon_{ij}
+$$
+
+-   OLS requirements: linearity, independence, homoscedasticity. OLS does not require distributional assumption.
+-   Errors $\rightarrow$ assumed independent and ignores repeated measures within the same child.
+-   We have seen that this does not bias $\mathbf{\hat{\beta}}$, but produces incorrect SEs leading to incorrect inference.
+
+(2) **LMM**: If we account for clustering using LMM, we include it in the mean function as follows:
+
+$$
+\begin{align*}
+y_{ij} &= \beta_0 + \beta_1 \text{trt}_i + \beta_2 \text{week}_j + \theta_i + \epsilon_{ij}\\
+\epsilon_{ij} & \sim N(0, \sigma^2)\\
+\theta_i & \sim N(0, \tau^2)
+\end{align*}
+$$
+
+-   Assumes random effects are assumed to be normally distributed. Inference depends on correct specification of random effects distribution and covariance structure.
+
+-   Estimate population level associations (fixed effects) **conditional on random effects**. $E(y_{ij}|\theta_i) = X_{ij}^T \mathbf{\beta} + \theta_i$.
+
+-   $V$ is the variance--covariance matrix implied by the random effects structure. In a random intercept model, $V$ has compound symmetry form, with diagonal elements $\tau^2+\sigma^2$ and off-diagonal elements $\tau^2$ within each subject.
+
+```{=html}
+<!--### Why not just use GLMM for marginal inference?
+
+Consider a random-intercept logistic mixed model:
+
+$$
+Y_{ij}\mid \theta_i \sim \text{Bernoulli}(p_{ij}), \quad 
+\text{logit}(p_{ij}) = \eta_{ij} + \theta_i,\quad 
+\theta_i \sim N(0,\tau^2),\; \eta_{ij}=x_{ij}^\top\beta.
+$$
+
+The **marginal mean** is
+
+$$
+\mathbb E[Y_{ij}\mid x_{ij}]
+= \mathbb E_{\theta_i}\!\left[\operatorname{expit}(\eta_{ij}+\theta_i)\right]
+= \int \frac{1}{1+e^{-(\eta_{ij}+\theta)}}\,\phi(\theta;0,\tau^2)\,d\theta,
+$$
+
+where $\phi(\cdot;0,\tau^2)$ is the normal density.  
+
+- This integral has **no closed form** (it is a logistic–normal integral).  
+- It is **not equal** to $\operatorname{expit}(\eta_{ij})$ because expectation and the logit link do not commute:
+
+$$
+\mathbb E[\operatorname{expit}(\eta+\theta)]
+\;\neq\;\operatorname{expit}(\eta+\mathbb E[\theta])
+=\operatorname{expit}(\eta).
+$$
+
+So the marginal mean is a nonlinear shrinkage of the conditional curve, and the marginal model is **not logistic with the same $\beta$**.
+
+For comparison, with a Poisson log-link random intercept model:
+
+$$
+\log \mu_{ij} = \eta_{ij}+\theta_i,\quad \theta_i\sim N(0,\tau^2),
+$$
+
+the marginal mean does have a closed form:
+
+$$
+\mathbb E[Y_{ij}\mid x_{ij}] 
+= e^{\eta_{ij}}\,\mathbb E[e^{\theta_i}] 
+= e^{\eta_{ij}}\,e^{\tau^2/2}.
+$$
+
+Here the marginal and conditional models differ by a multiplicative factor.  
+
+**Takeaway:**  
+GLMMs estimate **subject-specific (conditional)** effects. Obtaining marginal effects requires evaluating intractable integrals (logistic–normal), while **Marginal models directly estimate the marginal (population-averaged) effects** we often care about in public health.
+-->
+```
+
+------------------------------------------------------------------------
+
+#### [The Better Approach: Weighted Least Squares]{.underline}
+
+Using our example, we extend OLS (for normal/continuous outcomes) to account for heteroscedasticity `r colorize("unequal variance", "blue")`. Each observation is given a weight reflecting its reliability, improving efficiency when some points are noisier than others.
+
+Let $\mathbf{W}$ be diagonal with $\operatorname{diag}(\mathbf{W})=(v_1^{-1/2}, v_2^{-1/2},\ldots,v_N^{-1/2})$. Note that $\mathbf{W}^\top \mathbf{W}=\mathbf{V}^{-1}$.
+
+Now derive the WLS estimator $\hat{\beta}_{\text{WLS}}$:
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## Derivation of WLS estimator
+
+Define the transformed variables $$
+y^*=\mathbf{W}y,\quad X^*=\mathbf{W}X,\quad \epsilon^*=\mathbf{W}\epsilon.
+$$ Then $$
+y^*=X^*\beta+\epsilon^*,\qquad \mathrm{Var}(\epsilon^*)=I \; (\text{equal variance}).
+$$
+
+Using the OLS form, $$
+\begin{aligned}
+\hat\beta_{\text{WLS}}
+&=(X^{*^\top}X^*)^{-1}X^{*^\top}y^* \\
+&=([WX]^\top WX)^{-1}[WX]^\top Wy \\
+&=(X^\top W^\top WX)^{-1}X^\top W^\top Wy \\
+&=(X^\top V^{-1}X)^{-1}X^\top V^{-1}y.
+\end{aligned}
+$$
+
+Its (model-based) covariance is $$
+\begin{aligned}
+\operatorname{Cov}(\hat\beta_{\text{WLS}})
+&=(X^\top V^{-1}X)^{-1}X^\top V^{-1}\operatorname{Cov}(y)\,V^{-1}X\,(X^\top V^{-1}X)^{-1} \\
+&=(X^\top V^{-1}X)^{-1}X^\top V^{-1} V\, V^{-1}X\,(X^\top V^{-1}X)^{-1}\\
+&=(X^\top V^{-1}X)^{-1}.
+\end{aligned}
+$$
+:::
+
+**Properties of the WLS estimator (when** $E[y|X]=X\beta$ and $V$ is correctly specified):
+
+-   Unbiasedness: $E[\hat\beta_{\text{WLS}}]=\beta$ (same as OLS).\
+-   Efficiency: If errors are heteroscedastic and uncorrelated, WLS is more efficient (lower variance) than OLS. How do we know this?
+
+Under heteroscedasticity, the **true covariance** of the OLS estimator is given by: $\operatorname{Cov}(\hat\beta_{\text{OLS}})
+  =(X^\top X)^{-1}X^\top V X\,(X^\top X)^{-1}.$
+
+When $V= \sigma^2I$ this reduces to $\hat\sigma^2 (X^\top X)^{-1}.$
+
+-   When $V\neq\sigma^2 I$, the usual SEs are biased. In that case we must either
+    1.  use **robust (sandwich) SEs**, or\
+    2.  explicitly model $V$ and fit WLS.
+
+------------------------------------------------------------------------
+
+#### WLS: TLC example
+
+We'll now apply WLS to the TLC blood lead dataset to account for heteroskedasticity across weeks. The model fit is given by:
+
+$$
+\begin{aligned}
+y_{ij} &= \beta_0 
++ \beta_1 \,\mathbf{1}\{\text{trt}_i=\text{succimer}\}
++ \sum_{k=1}^K \gamma_k \,\mathbf{1}\{\text{week}_j=k\} \\
+&\quad + \sum_{k=1}^K \delta_k \,\mathbf{1}\{\text{trt}_i=\text{succimer}\}\,\mathbf{1}\{\text{week}_j=k\}
++ \epsilon_{ij},\qquad \boldsymbol{\epsilon}\sim N(\mathbf{0},\mathbf{V}).
+\end{aligned}
+$$ Note: $N=$ total number of observations.
+
+-   General model: allow variances to be non-constant.
+-   Implementation: impose structure (by week, by group, by function of covariate) so the model is estimable.
+-   Visual inspection of residuals by week (not shown here yet) suggests that variability in lead levels increases over time.
+
+We'll allow a non-constant variance for each week using $nlme::gls$ with a $varIdent$ variance function.
+
+```{r}
+# Different variance per week; no correlation structure
+m_wls <- gls(
+  lead ~ treatment * week_f,
+  data = tlcdata,
+  weights = varIdent(form = ~ 1 | week_f),  # Var differs by weekd, but still no correlation among observations.
+  method = "REML"
+)
+summary(m_wls)
+
+```
+
+**Model Interpretation**
+
+-   **Intercept (24.66, p \< 0.001):**\
+    Average baseline lead level (week 0) for children in the **placebo group**.
+
+-   **Succimer main effect (–5.58, p \< 0.001):**\
+    At baseline, succimer-treated children had lead levels about **5.6 µg/dL lower** than placebo children.
+
+-   **Time trend in placebo group (orthogonal polynomial coding):**
+
+    -   Quadratic contrast = 0.59 (p = 0.53): no curvature beyond the linear decline.\
+    -   Cubic contrast = –0.19 (p = 0.84): no higher-order trend.
+
+-   **Succimer × time interactions:**
+
+    -   Linear interaction = –1.54 (p = 0.24): no evidence that succimer changed the linear decline relative to placebo.\
+    -   Quadratic interaction = +8.54 (p \< 0.001): strong evidence that succimer altered the **curvature** of the time trend (nonlinear divergence from placebo).\
+    -   Cubic interaction = –2.44 (p = 0.072): marginal evidence of a cubic pattern.
+
+-   **Variance function:**\
+    Residual standard deviations were allowed to differ by week (relative to week 0 = 1.00).
+
+    -   Week 1: 1.33× larger\
+    -   Week 4: 1.37× larger\
+    -   Week 6: 1.52× larger\
+        This means variability in lead levels **increased over time**, and GLS down-weighted later observations accordingly.
+
+------------------------------------------------------------------------
+
+## Generalized Least Squares
+
+In **WLS**, we assumed the residual covariance matrix $\mathbf{V}$ was **known and diagonal** — errors were uncorrelated but had unequal variances.
+
+**Generalized Least Squares (GLS)** drops that restriction: $\mathbf{V}$ can be any **known, positive definite covariance matrix**, allowing for both:
+
+-   **Unequal variances** (heteroskedasticity), and\
+-   **Correlations** among observations.
+
+GLS solves the same weighted least squares problem, but now the "weights" come from $\mathbf{V}^{-1}$, which accounts for the full error structure (variances **and** covariances).
+
+-   If $\mathbf{V}$ is diagonal ⟶ **GLS = WLS**.\
+-   If $\mathbf{V} = \sigma^2 \mathbf{I}$ ⟶ **GLS = OLS**.\
+-   If $\mathbf{V}$ is a full positive definite matrix with nonzero off-diagonals ⟶ **GLS** (allows both unequal variances and correlations among errors). Estimator and covariance:
+
+$$
+\begin{align*}
+\hat{\beta}_{GLS} &= (X^T V^{-1} X)^{-1} X^T V^{-1} y, \\
+\operatorname{Cov}(\hat{\beta}_{GLS}) &= (X^T V^{-1} X)^{-1}.
+\end{align*}
+$$
+
+Because $V$ is positive definite, we can always factor it as $\mathbf{V}^{-1} = W^T W$ with $W = V^{-1/2}$, showing GLS is just OLS on transformed data.
+
+$\hat{\beta}_{GLS}$ is the **best (minimum variance) linear unbiased estimator (BLUE)** when $V$ is correctly specified under model assumptions.
+
+------------------------------------------------------------------------
+
+## Choosing a Covariance Structure for Grouped Data
+
+When data are grouped or repeatedly measured (e.g., patients within clinics, time points within subjects), the error terms are usually correlated. In GLS, we model this correlation by specifying the covariance matrix:
+
+$$
+V_i = \sigma^2 R_i(\alpha),
+$$
+
+where $\sigma^2$ is the **common variance** and $R_i(\alpha)$ is the "group" **correlation matrix** that depends on parameters $\alpha$ (e.g., a correlation $-1 < \alpha < 1$, but in practice it is often positive).
+
+$R_i(\alpha)=$ working correlation structure where $R_i[j, j'] = cor(y_{ij}, y_{ij'})$.
+
+For example, for a group (or cluster) of size 3, common choices for correlation matrices $R_i(\alpha)$ look as follows:
+
+-   **Independent**
+
+    -   Assumes no correlation among observations within a group.\
+    -   $$
+        R_i(\alpha) = \begin{bmatrix}
+        1 & 0 & 0 \\
+        0 & 1 & 0 \\
+        0 & 0 & 1
+        \end{bmatrix}.
+        $$
+
+-   **Exchangeable (Compound Symmetry)**
+
+    -   All pairs of observations in a group share the same correlation $\rho$.\
+    -   $$
+        R_i(\alpha) = \begin{bmatrix}
+        1 & \alpha & \alpha \\
+        \alpha & 1 & \alpha\\
+        \alpha & \alpha & 1
+        \end{bmatrix}.
+        $$
+
+-   **Unstructured**
+
+    -   Every variance and covariance is estimated freely. For 3 observations we need 3 variances and 3 unique covariances.\
+    -   $$
+        R_i(\alpha) = \begin{bmatrix}
+        1 & \alpha_{12} & \alpha_{13} \\
+        \alpha_{12} & 1 & \alpha_{23} \\
+        \alpha_{13} & \alpha_{23} & 1
+        \end{bmatrix}.
+        $$
+
+-   **AR(1) (First-Order Autoregressive)**
+
+    -   Correlation decays with time lag: $\text{Corr}(\varepsilon_t,\varepsilon_{t+k}) = \alpha^k$.\
+    -   $$
+        R_i(\alpha) = \begin{bmatrix}
+        1 & \alpha & \alpha^2 \\
+        \alpha & 1 & \alpha \\
+        \alpha^2 & \alpha & 1
+        \end{bmatrix}.
+        $$
+
+------------------------------------------------------------------------
+
+### TLC Example: OLS, WLS, and GLS
+
+We model mean lead level by treatment and week, changing only the **error covariance V**.
+
+$$
+\begin{aligned}
+y_{ij} &= \beta_0 
++ \beta_1 \,\mathbf{1}\{\text{trt}_i=\text{succimer}\}
++ \sum_{k=1}^K \gamma_k \,\mathbf{1}\{\text{week}_j=k\} \\
+&\quad + \sum_{k=1}^K \delta_k \,\mathbf{1}\{\text{trt}_i=\text{succimer}\}\,\mathbf{1}\{\text{week}_j=k\}
++ \epsilon_{ij},\qquad \boldsymbol{\epsilon}\sim N(\mathbf{0},\mathbf{V}).
+\end{aligned}
+$$
+
+Only the **covariance V** changes across OLS/WLS/GLS.
+
+#### 1) OLS (homoskedastic, independent)
+
+**Errors (matrix form):** $\mathbf{V} = \sigma^2 I_N$.
+
+```{r}
+m_ols <- gls(
+  lead ~ treatment * week_f,
+  data   = tlcdata,
+  method = "REML"
+)
+# summary(m_ols)
+```
+
+#### 2) WLS (heteroskedastic by week, independent)
+
+**Matrix form:** $V = diag(\nu_1, ... \nu_N)$.
+
+```{r}
+m_wls <- gls(
+  lead ~ treatment * week_f,
+  data   = tlcdata,
+  weights= varIdent(form = ~ 1 | week_f),   # different SD per week
+  method = "REML"
+)
+# summary(m_wls)
+```
+
+#### 3) GLS with AR(1) within child (heteroskedastic by week + correlation)
+
+Variance block for child i:
+
+$$
+V_i = A_i^{1/2}\,R_i(\rho)\,A_i^{1/2},\quad
+A_i \;=\; \operatorname{diag}\!\big( v_{i1},\, v_{i2},\, \ldots,\, v_{i n_i} \big),
+\qquad v_{ij} \;=\; \operatorname{Var}(\epsilon_{ij}), \quad 
+\big[R_i(\rho)\big]_{tt'}=\rho^{\,|t-t'|}.
+$$
+
+Full covariance is block-diagonal: V = blockdiag(V₁,…,V₁₀₀).
+
+```{r}
+m_gls_ar1 <- gls(
+  lead ~ treatment * week_f,
+  data        = tlcdata,
+  weights     = varIdent(form = ~ 1 | week_f),      # week-specific SDs
+  correlation = corAR1(form = ~ week_num | id),     # AR(1) within child
+  method      = "REML"
+)
+# summary(m_gls_ar1)
+```
+
+| Model | Error structure | AIC | Residual SE | Key variance/correlation estimates | Effect estimates (examples) |
+|----|----|----|----|----|----|
+| **OLS** | Homoskedastic, independent<br>$V=\sigma^2 I$ | 2647.0 | 6.63 | None (assumes equal variance, no correlation) | Succimer at baseline: –5.58 (SE 0.66, p\<0.001)<br>Succimer×Week.Q: 8.54 (SE 1.33, p\<0.001) |
+| **WLS** | Heteroskedastic by week<br>$V=\mathrm{diag}(\nu_1,\ldots,\nu_N)$ | 2635.6 | 5.02 | Week SD multipliers: 1.33 (wk1), 1.37 (wk4), 1.52 (wk6) | Similar fixed effects; SEs adjusted for unequal variance |
+| **GLS-AR1** | Heteroskedastic by week + AR(1) correlation<br>$V_i=A_i^{1/2}R_i(\rho)A_i^{1/2}$ | 2516.3 | 5.63 | AR(1) ρ = 0.75<br>Week SD multipliers: 1.26 (wk1), 1.14 (wk4), 1.33 (wk6) | Succimer×Week.Q effect stronger (SE smaller, t=10.2) |
+
+**Comparison Summary:**
+
+-   Coefficient estimates are typically similar across OLS, WLS, and GLS, but they need not be identical because each estimator applies different weights implied by the assumed error structure. The estimators remain unbiased for the population-level effects, while their **precision** differs depending on how well the covariance structure is modeled.Fixed effects $\beta's$ remain unbiased across the 3 models, i.e., $\beta_0 = 24.662$ across all models.
+-   **OLS** ignores heteroskedasticity and correlation → larger residual SE, higher AIC.\
+-   **WLS** improves efficiency by modeling unequal variance across weeks.\
+-   **GLS(AR1)** further improves model fit (lowest AIC) by capturing within-child correlation.\
+-   Fixed-effect estimates are broadly similar, but **precision improves** as error structure is modeled more realistically.
+
+```{=html}
+<!--
+
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## Derivation of GLS covariance (mirror WLS)
+
+1.  We assume that the error term $(\epsilon)$ has the following structure:
+
+$$
+\epsilon \sim N(0, \mathbf{V})
+$$
+
+where $\mathbf{V}$ is the var-cov matrix of the errors.
+
+2.  Substituting $\mathbf{y}$ into the expression for $\hat{\beta}_{GLS}$:
+
+$$
+\begin{align*}
+\hat{\beta}_{GLS} = & (\mathbf{X}^T \mathbf{V}^{-1}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{V}^{-1}\mathbf{y}\\
+& =(\mathbf{X}^T \mathbf{V}^{-1}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{V}^{-1} (\mathbf{X}\mathbf{\beta} + \mathbf{\epsilon})
+\end{align*}
+$$
+
+This can be expanded to:
+
+$$
+\hat{\beta}_{GLS} = (\mathbf{X}^T \mathbf{V}^{-1}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{V}^{-1} \mathbf{X}\mathbf{\beta} + (\mathbf{X}^T \mathbf{V}^{-1}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{V}^{-1}\mathbf{\epsilon}
+$$ The first term simplifies to:
+
+$$
+\hat{\beta}_{GLS} = \mathbf{\beta} + (\mathbf{X}^T \mathbf{V}^{-1}\mathbf{X})^{-1}\mathbf{X}^T \mathbf{V}^{-1}\mathbf{\epsilon}
+$$
+
+4.  To find $cov(\hat{\beta}_{GLS})$, we need the covariance of the error term $\epsilon$ where $E(\epsilon) =0$ and $cov(\epsilon) = V$.
+
+$$
+Var(\hat{\beta}_{GLS}) = Var((X^T V^{-1}X)^{-1}X^T V^{-1} \epsilon)
+$$
+
+Using the property that $cov(A\mathbf{Z}) = A cov(\mathbf{Z}) A^T$ for an constant matrix $A$ and random vector $Z$:
+
+$$
+Var(\hat{\beta}_{GLS}) = (\mathbf{X}^T \mathbf{V}^{-1} \mathbf{X})^{-1} Var(\mathbf{\epsilon}) \mathbf{V}^{-1} \mathbf{X}(\mathbf{X}^T\mathbf{V}^{-1} \mathbf{X})^{-1}
+$$
+
+Substituting $Var(\mathbf{\epsilon}) = \mathbf{V}$:
+
+$$
+Var(\hat{\beta}_{GLS}) = (\mathbf{X}^T \mathbf{V}^{-1} \mathbf{X})^{-1} \mathbf{V} \mathbf{V}^{-1} \mathbf{X}(\mathbf{X}^T\mathbf{V}^{-1} \mathbf{X})^{-1}
+$$
+
+This simplified to:
+
+$$
+Var(\hat{\beta}_{GLS}) = (\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X})^{-1} \mathbf{X}^T \mathbf{V}^{-1}\mathbf{X} (\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X})^{-1}
+$$
+
+The middle term cancels out:
+
+$$
+Var(\hat{\beta}_{GLS}) =  (\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X})^{-1}
+$$
+
+This means that $\hat{\beta}_{GLS} = (X^T V^{-1}X)^{-1}X^T V^{-1}$ is the **best (minimum variance) linear unbiased estimator (BLUE)**. 
+:::-->
+```
+
+------------------------------------------------------------------------
+
+### Robust Inference
+
+So far we have assumed the error covariance matrix $V$ is **known and correctly specified**.\
+- If that is true, WLS/GLS give efficient estimates and valid standard errors.\
+- But if $V$ is **unknown or misspecified**, the coefficient estimates remain unbiased, yet the usual standard errors can be wrong.
+
+**Solution:** use **robust (sandwich) standard errors**, which provide valid inference without needing the exact form of $V$.
+
+------------------------------------------------------------------------
+
+#### Robust SEs for OLS
+
+The general covariance of the OLS estimator is
+
+$$
+\operatorname{Cov}(\hat{\beta}_{OLS}) = (X^\top X)^{-1} X^\top V X (X^\top X)^{-1}.
+$$
+
+-   If $V = \sigma^2 I$ (homoskedastic, independent errors), this reduces to\
+    $\operatorname{Cov}(\hat\beta_{OLS}) = \sigma^2 (X^\top X)^{-1}$.
+
+-   If $V \neq \sigma^2 I$, the usual plug-in formula is invalid.
+
+A robust alternative replaces $V$ with an empirical variance estimate:
+
+$$
+\hat\Omega = \operatorname{diag}(\hat\epsilon_1^2,\,\hat\epsilon_2^2,\,\ldots,\,\hat\epsilon_N^2),
+\quad \hat\epsilon_i = y_i - x_i^\top \hat\beta_{OLS}.
+$$
+
+The **sandwich covariance matrix** is then
+
+$$
+\widehat{\operatorname{Cov}}(\hat\beta_{OLS}) =
+(X^\top X)^{-1} X^\top \hat\Omega X (X^\top X)^{-1}.
+$$
+
+This is called the **sandwich estimator** because the middle term ($\hat\Omega$, the "meat") is sandwiched between two "bread" pieces involving $X$.
+
+------------------------------------------------------------------------
+
+#### Robust SEs for GLS
+
+For GLS, the coefficient estimator is
+
+$$
+\hat{\beta}_{GLS} = (X^\top V^{-1} X)^{-1} X^\top V^{-1} y.
+$$
+
+-   If the assumed $V$ is **correct**, then
+
+$$
+  \operatorname{Cov}(\hat\beta_{GLS}) = (X^\top V^{-1} X)^{-1}.
+$$
+
+-   If the assumed $V$ is **misspecified**, these SEs are invalid.\
+    We can again use the sandwich form, now weighted by $V^{-1}$:
+
+The robust (sandwich) covariance of the GLS estimator is
+
+$$
+\widehat{\operatorname{Cov}}(\hat\beta_{\text{GLS}})
+= (X^\top V^{-1} X)^{-1} \;
+X^\top V^{-1}\,\hat\Omega\,V^{-1} X \;
+(X^\top V^{-1} X)^{-1},
+$$
+
+where $\hat\Omega$ captures empirical residual variation:
+
+-   **Clustered data:**\
+    Let $\hat{\boldsymbol\epsilon}_i = y_i - X_i \hat\beta_{\text{GLS}}$ be the residual vector for cluster $i$. Then\
+    $$
+    \hat\Omega = \sum_{i=1}^m X_i^\top V_i^{-1}\,\hat{\boldsymbol\epsilon}_i \hat{\boldsymbol\epsilon}_i^\top\, V_i^{-1} X_i.
+    $$
+
+-   **Independent data (special case):**\
+    Each cluster has size 1, so $\hat{\boldsymbol\epsilon}_i = \hat\epsilon_i$ is a scalar. Then\
+    $$
+    \hat\Omega = \operatorname{diag}(\hat\epsilon_1^2, \ldots, \hat\epsilon_N^2),
+    $$ recovering the White heteroskedasticity-robust estimator. \#### Summary
+
+-   **OLS + robust SEs:** makes no assumptions about $V$. Inference is valid, but estimates may be inefficient.\
+
+-   **GLS + robust SEs:** assumes some structure for $V$. If that structure is close to the truth, estimates are more efficient; robust SEs protect inference if the structure is wrong.
+
+------------------------------------------------------------------------
+
+#### GEE: TLC Example
+
+We now fit a **(GEE)** model for lead level, with exchangeable correlation within each child. GEE automatically computes robust (“sandwich”) SEs. We will further discuss GEE in Module 3B.
+
+```{r}
+
+library(geepack)
+
+m_gee <- geeglm(
+  lead ~ treatment * week_f,
+  id     = id,
+  data   = tlcdata,
+  corstr = "exchangeable"
+)
+
+summary(m_gee)
+
+```
+
+**Model Interpretation**
+
+-   Estimates *population-averaged* effects, not subject-specific trajectories.\
+
+-   Uses a working correlation structure ("exchangeable") to model repeated measures within child.\
+
+-   Robust (sandwich) standard errors are reported, so inference remains valid even if the correlation model is wrong.
+
+-   **Intercept (24.66, SE = 0.71, p \< 0.001)**\
+    Average baseline blood lead level in the placebo group is \~24.7 µg/dL.
+
+-   **Treatment main effect (−5.58, SE = 1.10, p \< 0.001)**\
+    At baseline, succimer-treated children have significantly lower mean lead levels than placebo, and the robust SE confirms this effect is precise.
+
+-   **Week trends (placebo group)**
+
+    -   Linear effect (−1.89, SE = 0.39, p \< 0.001): mean lead decreases linearly across weeks.\
+    -   Quadratic effect (+0.59, SE = 0.31, p ≈ 0.056): weak evidence of curvature.\
+    -   Cubic effect (−0.19, SE = 0.27, p ≈ 0.48): no evidence of additional curvature.
+
+-   **Treatment × Week interactions**
+
+    -   Linear (−1.54, SE = 0.86, p ≈ 0.07): succimer shows a steeper linear decline, but evidence is modest.\
+    -   Quadratic (+8.54, SE = 0.95, p \< 0.001): strong, robust evidence that succimer introduces a pronounced curved pattern of decline.\
+    -   Cubic (−2.44, SE = 0.66, p \< 0.001): robust evidence of additional curvature in succimer group compared to placebo.
+
+-   **Correlation structure**
+
+    -   Estimated exchangeable correlation α ≈ 0.60 (moderate within-child correlation).\
+    -   Even if this structure is not perfectly correct, robust SEs protect our inference.
+
+------------------------------------------------------------------------
+
+## `r colorize("Summary", "purple")`
+
+| **Section** | **Description** |
+|----|----|
+| **What is the model?** | **Marginal models** estimate **population-level associations** without specifying random effects. The general form is $y = X\beta + \epsilon$, with $\operatorname{Var}(\epsilon) = V$. |
+| **Motivation** | Standard OLS assumes independent, homoskedastic errors. Real-world data (longitudinal, clustered, multilevel) often violate these assumptions, leading to biased SEs and invalid inference. |
+| **OLS vs. WLS vs. GLS** | **OLS:** ignores correlation/heteroskedasticity → unbiased coefficients, wrong SEs if $V \neq \sigma^2 I$. <br> **WLS:** handles heteroskedasticity with diagonal $V$. <br> **GLS:** allows general $V$ with variances + covariances. |
+| **Estimators** | OLS: $\hat{\beta}_{OLS} = (X^\top X)^{-1}X^\top y$ <br> WLS: $\hat{\beta}_{WLS} = (X^\top V^{-1}X)^{-1} X^\top V^{-1} y$, $V$ diagonal <br> GLS: same formula with full $V$. |
+| **Properties** | All are unbiased and consistent for $\beta$. Efficiency differs: WLS/GLS improve efficiency when $V$ is correctly specified. |
+| **Robust Inference** | **OLS + robust SEs:** no assumptions about $V$, robust but inefficient. <br> **GLS + robust SEs:** assumes structure in $V$ for efficiency, robust SEs protect against misspecification. |
+| **Covariance Structures** | $V_i = \sigma^2 R_i(\alpha)$ with group correlation matrix $R_i(\alpha)$. <br> **Independent:** no correlation. <br> **Exchangeable:** equal correlation $\rho$. <br> **Unstructured:** free variances/covariances. <br> **AR(1):** correlation decays with lag. |
+| **Example (TLC data)** | WLS with `varIdent` model: succimer significantly reduced baseline lead levels (--5.6 µg/dL, p\<0.001) and showed a strong quadratic trajectory difference vs. placebo. Residual variability increased over time, modeled via week-specific variances. |
+| **Takeaway** | Marginal models give valid population-level inference when correlation/heteroskedasticity is present. Efficiency gains come from modeling $V$, while robust SEs ensure inference remains valid even if $V$ is misspecified. |

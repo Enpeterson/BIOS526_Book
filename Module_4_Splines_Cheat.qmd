@@ -1,0 +1,129 @@
+# Module 4 Cheat Sheet {.unnumbered}
+
+```{r, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color, x)
+  } else x
+}
+
+```
+
+`r colorize("Module 4 Cheat Sheet — Basis Expansion, Parametric Splines, Penalized Splines", "purple")`
+
+------------------------------------------------------------------------
+
+`r colorize("4A. Basis Expansion (from 4A)", "purple")`
+
+**Model setup.** Let $y_i = g(x_i) + \epsilon_i$ with $g$ possibly non-linear. Represent $g$ with fixed, known **basis functions** $b_m(x)$:
+
+$$
+g(x_i) = \sum_{m=1}^M \beta_m b_m(x_i).
+$$ Basis functions are chosen a priori and are transformations of $x$; estimation targets the coefficients $\beta_m$.
+
+**Common bases from the notes.**\
+Polynomial basis: $$
+b_1(x)=1, b_2(x)=x, b_3(x)=x^2, \ldots, b_M(x)=x^{M-1},\quad
+g(x)=\beta_0+\beta_1 x+\cdots+\beta_{M-1}x^{M-1}.
+$$ Indicator (step) basis: $$
+b_m(x)=\mathbb{1}_{x\in I_m},\quad g(x)=\sum_{m=1}^M \beta_m\,\mathbb{1}\{x\in I_m\}.
+$$ Periodic (Fourier) basis: $$
+g(x)=\beta_1\sin(2\pi x)+\beta_2\cos(2\pi x)+\beta_3\sin(4\pi x)+\cdots.
+$$
+
+**Piecewise regression and knots.** Split the domain into regions using **knots** and allow $x$ to interact with region indicators. For the three regions (preterm, full-term, post-term), a piecewise quadratic can be written as $$
+\begin{aligned}
+y_i=\ &\beta_0+\beta_1 x_i+\beta_2 x_i^2\\
+&+\beta_3 D_{1i}+\beta_4 x_i D_{1i}+\beta_5 x_i^2 D_{1i}\\
+&+\beta_6 D_{2i}+\beta_7 x_i D_{2i}+\beta_8 x_i^2 D_{2i}+\epsilon_i,
+\end{aligned}
+$$ where $D_{1i}=\mathbb{1}\{37\le x_i<42\}$ and $D_{2i}=\mathbb{1}\{x_i\ge 42\}$.
+
+**Continuity cautions (from 4A).** Without constraints, piecewise polynomials can be discontinuous at knots in value, slope, or curvature; this motivates spline constructions that enforce smooth joins.
+
+------------------------------------------------------------------------
+
+`r colorize("4B. Parametric (Truncated-Power) Splines & B-Splines (from 4B)", "purple")`
+
+**Truncated-power spline form.** For degree $d$ and knots $k_1,\dots,k_M$, $$
+y_i=\beta_0+\sum_{j=1}^d \beta_j x_i^j+\sum_{m=1}^M \gamma_m (x_i-k_m)^d_{+},\qquad
+(u)^d_{+}=\begin{cases}u^d,&u>0\\ 0,&\text{otherwise.}\end{cases}
+$$ This is the **truncated power basis**.
+
+**Continuity by degree (from 4B).**\
+Linear ($d=1$): $C^0$ --- function continuous; slope can jump.\
+Quadratic ($d=2$): $C^1$ --- slope continuous.\
+Cubic ($d=3$): $C^2$ --- curvature continuous; common default.
+
+**Worked linear spline (two knots at 36.5, 41.5).** $$
+y_i=\beta_0+\beta_1 x_i+\beta_2 (x_i-36.5)_{+}+\beta_3 (x_i-41.5)_{+}+\epsilon_i,
+$$ where $\beta_2,\beta_3$ are changes in slope after each knot; the function is continuous at the knots.
+
+**Worked cubic spline (knots** $\kappa_1,\kappa_2$). $$
+g(x_i)=\beta_0+\beta_1 x_i+\beta_2 x_i^2+\beta_3 x_i^3+\beta_4 (x_i-\kappa_1)^3_{+}+\beta_5 (x_i-\kappa_2)^3_{+}.
+$$ Ensures continuity of value, slope, and curvature at $\kappa_1,\kappa_2$.
+
+**B-splines (basis reparameterization).** Represent the same spline space with localized basis functions $b_k^{(d)}(x)$: $$
+\mu(x_i)=\sum_{k=1}^{K}\beta_k\, b_k^{(d)}(x_i).
+$$ B-splines have **local support** and improved numerical stability; coefficients are not interpreted individually---focus on the fitted curve.
+
+**Choosing degree and knots (from 4B).** Cubic is a practical default. With enough knots, exact locations matter less than the number of basis functions; knot number controls flexibility and variance.
+
+------------------------------------------------------------------------
+
+`r colorize("4C. Penalized Splines & Smoothing Splines (from 4C)", "purple")`
+
+**Motivation.** Fixed-knot splines require choosing number and location of knots. Too few knots yields high bias; too many yields high variance. Penalization allows **many knots for flexibility** while **controlling wiggliness** through a smoothness penalty.
+
+**Penalized least squares (PLS).** $$
+\text{PLS}(\lambda)=\sum_{i=1}^{n}\big(y_i-g(x_i)\big)^2+\lambda\,J(g),
+\qquad J(g)=\int [g''(x)]^2\,dx.
+$$ Small $\lambda$ gives a wiggly fit; large $\lambda$ gives a smoother fit.
+
+**Constraint vs penalty (equivalent views).**\
+Constrained: minimize $\sum (y_i-g(x_i))^2$ subject to $J(g)\le c$.\
+Penalty: minimize $\sum (y_i-g(x_i))^2+\lambda J(g)$.\
+$\lambda$ is the Lagrange multiplier linked to $c$; both express the same trade-off.
+
+**Connections to Ridge/Lasso (from 4C).** Ridge ($L2$) and Lasso ($L1$) fit the same PLS template with $J(g)$ acting on coefficients (size). Penalized splines use $J(g)$ that acts on **function roughness** instead, smoothing the entire curve.
+
+**Matrix formulation and closed-form solution.** With basis matrix $\mathbf{B}$ and penalty matrix $\mathbf{K}$ encoding curvature, $$
+\text{PLS}(\lambda)=(\mathbf{y}-\mathbf{B}\boldsymbol{\beta})'(\mathbf{y}-\mathbf{B}\boldsymbol{\beta})+\lambda\,\boldsymbol{\beta}'\mathbf{K}\boldsymbol{\beta},
+$$ $$
+\hat{\boldsymbol{\beta}}=(\mathbf{B}'\mathbf{B}+\lambda \mathbf{K})^{-1}\mathbf{B}'\mathbf{y}.
+$$ Intercept and linear trends are typically unpenalized; higher-order components are shrunk toward zero as $\lambda$ increases.
+
+**Smoother matrix and edf.** $$
+\hat{\mathbf{y}}=\mathbf{S}_\lambda \mathbf{y},\qquad
+\mathbf{S}_\lambda=\mathbf{B}(\mathbf{B}'\mathbf{B}+\lambda \mathbf{K})^{-1}\mathbf{B}',\qquad
+\text{edf}=\mathrm{trace}(\mathbf{S}_\lambda).
+$$ edf quantifies effective flexibility: small $\lambda$ $\Rightarrow$ large edf; large $\lambda$ $\Rightarrow$ small edf.
+
+**Choosing** $\lambda$ by GCV (from 4C). $$
+\mathrm{GCV}(\lambda)=\frac{\frac{1}{n}\sum_i (y_i-\hat{y}_i)^2}{\left[1-\mathrm{trace}(\mathbf{S}_\lambda)/n\right]^2}.
+$$ Minimizing GCV yields a data-driven "just right'' smoothing level balancing fit and complexity.
+
+**Smoothing splines (limit case).** $$
+\min_{g}\ \sum_{i=1}^{n}(y_i-g(x_i))^2+\lambda\int [g''(x)]^2\,dx.
+$$ With a knot at every unique $x_i$, the solution is a natural cubic spline regulated entirely by $\lambda$. Conceptually elegant; penalized B-splines are preferred for large $n$.
+
+------------------------------------------------------------------------
+
+`r colorize("At-a-Glance: What to Use When", "purple")`
+
+| Choice                            | Use it when                                                          | Key control                |
+|------------------------|------------------------|------------------------|
+| **Polynomial basis**              | Broad, global curvature is adequate                                  | Degree $d$                 |
+| **Piecewise (indicator) basis**   | Step changes or discontinuities                                      | Interval design            |
+| **Truncated-power splines**       | Smooth joins at selected knots; interpretable slope/curvature change | Number & location of knots |
+| **B-splines**                     | Stable, localized control of shape with many knots                   | Basis dimension (df)       |
+| **Penalized splines (P-splines)** | Many knots but smoothness controlled by the data                     | $\lambda$ (via GCV/REML)   |
+| **Smoothing splines**             | Conceptual limit: knot at every $x_i$                                | $\lambda$ only             |
+
+------------------------------------------------------------------------
+
+`r colorize("Takeaway", "purple")`
+
+Basis expansion turns nonlinearity into a linear-in-parameters problem. Parametric splines ensure continuity and, with cubic degree, continuous curvature at knots. Penalized splines start with many knots and use a curvature penalty $J(g)=\int[g''(x)]^2 dx$ to control wiggliness; the solution $\hat{\beta}=(\mathbf{B}'\mathbf{B}+\lambda\mathbf{K})^{-1}\mathbf{B}'\mathbf{y}$ shows how $\lambda$ trades fit for smoothness. GCV (or REML) selects $\lambda$ automatically. These ideas set up Module 5A's GAMs, where multiple penalized smooths are combined additively under a GLM link.

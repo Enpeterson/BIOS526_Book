@@ -1,0 +1,649 @@
+# Module 6 Model Selection, Diagnostics, & Regression Workflow {.unnumbered}
+
+```{r, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color, x)
+  } else x
+}
+
+```
+
+**Objective**
+
+After completing this module, students will be able to (1) define an estimand clearly, (2) identify dependence structures in clustered data, (3) fit and diagnose linear mixed models, (4) identify nonlinearity and incorporate spline smooths, (5) use diagnostics to guide model refinement, and (6) produce a complete model-building workflow and final report.
+
+### Motivation and Examples
+
+::: {.callout-important style="color: red"}
+## Motivation
+
+Why develop a workflow?
+
+Modules 1--5 introduced the major families of regression models---linear models, generalized linear models, mixed models, GEEs, splines, and GAMs. Each module focused on one modeling framework at a time. But **real statistical analysis does not proceed one module at a time.**
+
+In real applications, analysts begin with a scientific question, explore the data, build an initial model, diagnose its limitations, and then iteratively refine the model until they reach a defensible, interpretable representation of the data-generating process.
+
+This requires a workflow---a structured sequence of decisions that guides model building, model checking, and model improvement.
+
+A workflow answers the following questions:
+
+1.  What we are trying to estimate?
+
+2.  Why we chose a particular modeling strategy?
+
+3.  How we checked whether that strategy was reasonable?
+
+4.  How we refined the model when diagnostics suggested problems?
+
+5.  How we visualized and communicated the final result?
+
+The best guiding principle is simple but powerful:
+
+`r colorize("Start with the simplest plausible model and build complexity only as needed.", "blue")`
+:::
+
+To ground the workflow in a concrete setting, we turn to a more realistic dataset drawn from gestational-age birth records. The dataset includes:
+
+-   **`gw`**: gestational age (weeks),
+
+-   **`age`**: maternal age at delivery (years),
+
+-   **`bw`**: birthweight (grams).
+
+-   **`child_id`**: Infant unique id.
+
+-   **`mother_id`**: Mother unique id.
+
+These variables allow us to examine clinically relevant relationships between maternal characteristics and neonatal outcomes.
+
+```{r, warning = F, message= F}
+library(lme4)
+library(lmerTest)
+library(dplyr)
+
+gabirths <- readRDS("/Users/emilypeterson/Library/CloudStorage/OneDrive-EmoryUniversity/BIOS 526/BIOS526_Book/data/GAbirth_full.RDS")
+
+head(gabirths)
+
+```
+
+A common workflow looks like this:
+
+**Step 1 --- Define the Estimand**
+
+**Step 2 --- EDA: Explore the Data Structure**
+
+**Step 3 --- Build an Analysis Plan**
+
+**Step 4 --- Baseline Model**
+
+**Step 5 --- Specify Diagnostics**
+
+**Step 6 --- Extend the Workflow**
+
+**Step 7 --- Visualization and Communication**
+
+## `r colorize("1. Define the Estimand", "purple")`
+
+Before touching a model, we need to get clarity on **the estimand:** what quantity we ultimately want to estimate (what is the scientific question we want to answer?)
+
+### `r colorize("The Estimand", "green")`
+
+Before fitting any model, we must define the **estimand**---the target quantity we aim to learn from the data. The estimand is not the model and not the estimator; it is the underlying population quantity that our chosen method will approximate.
+
+Different modeling strategies---ordinary least squares, spline-based GAMs, linear mixed models, or GEEs---can all be viewed as alternative approaches to estimating the same function $m(gw,age) = E[bw|age, gw]$ under different assumptions about linearity, smoothness, and correlation.
+
+Being explicit about the estimand serves several purposes. It clarifies which variables must enter the model as predictors or adjustment factors, keeps the scientific question distinct from the modeling tools we use, and provides a stable reference point as we progress from simpler to more flexible models.
+
+`r colorize("In the workflow that follows, every modeling decision---choice of link, inclusion of random effects, introduction of splines or tensor-product smooths---will be justified in terms of how well the resulting model approximates this estimand, i.e., the conditional mean function.", "gray")`
+
+------------------------------------------------------------------------
+
+### `r colorize("Why Defining the Estimand Matters", "green")`
+
+A clearly stated estimand serves several purposes:
+
+1.  It guides the choice of modeling strategy. Once the estimand is defined, the set of appropriate models becomes clear. If the goal is the conditional mean, linear or generalized linear models are natural starting points. If the goal shifts to conditional quantiles, the entire modeling framework changes.
+
+2.  It determines which covariates must be included. The estimand dictates the role of each variable---whether maternal age, for example, should be treated as an adjustment factor, a confounder, or a predictor of primary scientific interest.
+
+3.  It provides a stable reference point across modeling approaches. Different estimators (e.g., OLS, GAMs, or LMMs) may be used to approximate the relationship, but the underlying estimand remains fixed. This allows the analyst to compare models and refine the specification without losing sight of the scientific target.
+
+------------------------------------------------------------------------
+
+### `r colorize("Common Pitfalls", "green")`
+
+1.  **Confusing the estimand with the estimator.** "We want to fit a GAM" is not a scientific question; it is a modeling choice. The estimand must be defined before selecting a model.
+
+2.  **Defining the estimand after examining the data.** Allowing the data to determine the estimand blurs the boundary between inference and exploration.
+
+3.  **Using an estimand that is too vague.** Statements such as "We want to understand the effect of gestational age" are incomplete unless the scale, population, and conditioning variables are specified.
+
+4.  The estimand does not change regardless of model approach; only the estimator changes.
+
+------------------------------------------------------------------------
+
+### `r colorize("Definition of the Estimand (Our Example)", "green")`
+
+In our example, we are interested in how infant birthweight varies with gestational age and maternal age. A natural target is the **conditional mean birthweight** as a function of these predictors. Here we define $m(.)$ as
+
+$$
+m(gw,age)=E[bw∣gw,age],
+$$
+
+which describes how expected birthweight changes across gestational age while holding maternal age fixed (or vice versa).
+
+This estimand is [**population-level**]{.underline}: it represents the mean birthweight in the target population of births, not the average birthweight within a given mother.
+
+------------------------------------------------------------------------
+
+## `r colorize("2. Data Structure", "purple")`
+
+With the estimand defined, the next step is to understand the structure of the data that will inform it. Exploratory Data Analysis (EDA) serves two purposes:
+
+1.  **To learn how the observed data relate to the estimand**, and
+
+2.  **To diagnose the modeling challenges that will arise later**\
+    (nonlinearity, skewness, clustering, outliers, heteroskedasticity, etc.).
+
+EDA is not a formal model, but it shapes every modeling decision that follows.
+
+------------------------------------------------------------------------
+
+### `r colorize("Independent Structure?", "green")`
+
+**Are the observations independent?**
+
+If multiple infants share the same mother, then the birthweights of siblings may be correlated due to genetics, shared environment, or maternal health factors. Independence assumptions underlying OLS or GLM may therefore be violated. Before choosing any model, we inspect how the data are organized.
+
+This simple summary helps determine whether we should consider mixed models (Module 1), GEEs (Module 3), or survey-type adjustments.
+
+```{r}
+gabirths %>%
+dplyr::count(mother_id, name = "n_children") %>%
+dplyr::arrange(desc(n_children)) %>%
+head()
+```
+
+This summary shows that some mothers contribute multiple infants to the dataset. The number of infants per mother ranges from 1 to 5, meaning the data consist of clusters of varying sizes. If we treat each mother as a cluster, the observations are nested within mothers with unequal cluster sizes.
+
+------------------------------------------------------------------------
+
+### `r colorize("Marginal Distributions", "green")`
+
+To understand the estimand $m(gw, age)$, we first look at the marginal behavior of its components. **Birthweight** often exhibits right skew, while gestational age may show natural bounds (e.g., preterm \< 37 weeks). Maternal age typically spans a broad range and may have nonlinear associations with outcome.
+
+Understanding these shapes helps anticipate whether:
+
+-   linearity assumptions will hold,
+
+-   transformations may be needed, or
+
+-   smooth functions (splines/GAMs) are appropriate.
+
+```{r, warning = F, message = F, echo = F}
+library(ggplot2)
+summary(gabirths[, c("bw", "gw", "age")])
+
+p1 <- ggplot(gabirths, aes(x = bw)) +
+  geom_density(fill = "lightblue", alpha = 0.6) +
+  labs(
+    x = "Birthweight (g)",
+    y = "Density",
+    title = "Density Plot of Birthweight"
+  )
+
+p2 <- ggplot(gabirths, aes(x = gw)) +
+  geom_density(fill = "lightblue", alpha = 0.6) +
+  labs(
+    x = "Gest Week",
+    y = "Density",
+    title = "Density Plot of Gest Week"
+  )
+
+p3 <- ggplot(gabirths, aes(x = age)) +
+  geom_density(fill = "lightblue", alpha = 0.6) +
+  labs(
+    x = "Mother's Age",
+    y = "Density",
+    title = "Density Plot of Mother's Age"
+  )
+
+# pick mothers with >= 3 infants and take, say, 12 of them
+moms_subset <- gabirths %>%
+  count(mother_id) %>%
+  filter(n >= 3) %>%
+  slice_max(n, n = 12) %>%
+  pull(mother_id)
+
+gabirths_subset <- gabirths %>%
+  filter(mother_id %in% moms_subset)
+
+p4 <- ggplot(gabirths_subset, aes(x = factor(mother_id), y = bw)) +
+  geom_boxplot() +
+  labs(
+    x = "Mother ID",
+    y = "Birthweight (g)",
+    title = "Within-Mother Variability in Birthweight\n(Selected Mothers)"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+gridExtra::grid.arrange(p1, p2,p3, p4, nrow = 2)
+```
+
+We can illustrate densities of the outcome and covariate variables both overall and within groups. These can give us a sense of the outcome density as well as dispersion.
+
+**Interpretation of Marginal Distributions**
+
+The summary statistics provide an initial sense of the scale, variability, and clinical plausibility of each variable:
+
+-   **Birthweight (`bw`)** ranges from *748 g to 3798 g*, with a mean of about *3289 g*.\
+    The lower tail reflects preterm or growth-restricted infants, while the upper tail reflects large-for-gestational-age infants. The interquartile range (3210--3466 g) covers healthy term births.
+
+-   **Gestational age (`gw`)** spans *26 to 44 weeks*, with a median of *39 weeks*.\
+    Values below 37 weeks correspond to preterm births, and the distribution is strongly right-skewed toward full-term deliveries, as expected in population-level data.
+
+-   **Maternal age (`age`)** ranges from *15 to 44 years*, with a median of *26*.\
+    The wide spread suggests that maternal age may contribute both linear and nonlinear variation in birth outcomes.
+
+-   The within-mother boxplots reveal substantial **between-mother heterogeneity** in baseline infant birthweight and some variability in spread.
+
+These features motivate a workflow in which we begin with simple models and then examine whether nonlinear terms or smoothing functions are needed to accurately estimate the estimand.
+
+------------------------------------------------------------------------
+
+### `r colorize("Exploring Associations", "green")`
+
+Before specifying a model, we examine the bivariate relationships among birthweight, gestational age, and maternal age. This helps us judge linearity, detect nonlinear patterns, and understand how the predictors relate to the outcome at a population level.
+
+```{r, message = F, warning = F, echo=F}
+#Birthweight vs. Gestational Age
+library(ggplot2)
+
+ggplot(gabirths, aes(x = gw, y = bw)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Birthweight (g)",
+       title = "Exploratory Plot: Birthweight vs Gestational Age")
+
+ggplot(gabirths, aes(x = age, y = bw)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  labs(x = "Mother age",
+       y = "Birthweight (g)",
+       title = "Exploratory Plot: Birthweight vs Mother Age")
+
+```
+
+Interpretation: The LOESS smoother clearly shows steep growth in early gestational ages with a leveling off around 38–40 weeks, a pattern that linear terms cannot capture. There is a more linear trend between `age` and `bw`. This motivates our plan to include smooth functions later.
+
+------------------------------------------------------------------------
+
+## `r colorize("Build an Analysis Plan", "purple")`
+
+With the estimand clarified and the data structure understood, the next step is to build an analysis plan---a short, principled outline of how we intend to estimate
+
+$$
+m(gw, age) = E[bw|gw, age]
+$$
+
+An analysis plan is not the model itself. It is a blueprint that anticipates likely modeling challenges and provides a rationale for **where to begin** and **how to proceed** if the initial model is inadequate.\
+
+The plan should answer four questions:
+
+1.  **What model family is appropriate for the outcome?**
+
+2.  **Do we expect linearity, or should we plan for flexible nonlinear effects?**
+
+3.  **Are the observations independent? If not, how should we handle correlation?**
+
+4.  **What diagnostics will determine whether we need more complexity?**
+
+------------------------------------------------------------------------
+
+### `r colorize("1. Choosing the baseline model", "green")`
+
+Birthweight is continuous and measured in grams. Although reasonably well behaved for most term infants, its distribution is clearly right-skewed with heavier lower tails due to preterm and growth-restricted births.
+
+Thus, a `r colorize("Gaussian", "red")` working model is a reasonable starting point for the conditional mean, even if residuals later suggest refinements.
+
+We know that there are repeated children within mother. We have learned that **ignoring this clustering results in invalid inference**. Our initial model needs to respect the structure of the data, which is not independent.
+
+Based on these two conditions, we have multiple model options that capture the estimand of interest:
+
+(1) A natural baseline is a **LMM** in which we model birthweight for child $i$ with a random intercept for mother $j$:
+
+$$
+\begin{align*}
+bw_{ij} &= \beta_0 + \beta_1 gw_{ij} + \beta_2 age_{ij} + \theta_j  + \epsilon_{ij}\\
+\epsilon_{ij} &\sim N(0, \sigma^2),\\
+\theta_j &\sim N(0, \tau^2).
+\end{align*}
+$$
+
+This model targets the same population-level estimand but does so while properly accounting for the non-independence of infants within mothers. It is intentionally simple and serves as a baseline against which more flexible models can be compared.
+
+(2) Another option is **GEE** which also accounts for within-mother correlation but only models population-level associations and **not subject-specific effects**. GEE requires specifying a working correlation structure (e.g., exchangeable), although inference remains valid even if this structure is misspecified.
+
+$$
+\begin{align*}
+bw_{ij} &= \beta_0 + \beta_1 gw_{ij} + \beta_2 age_{ij} \\
+corr(bw_{ij}, bw_{ik}) & = \alpha
+\end{align*}
+$$
+
+**Review of Assumptions and Robustness**
+
+| Method | Key Assumptions | Robustness / Properties |
+|----|----|----|
+| **LMM** | \- Random effects are correctly specified (typically normal).<br>- Covariance structure must be correctly specified for full efficiency. | \- Most efficient if the model is correctly specified.<br>- Provides BLUPs for each mother.<br>- Sensitive to covariance misspecification. |
+| **GEE** | \- Does not require assumptions about random‐effects distribution.<br>- Requires a working correlation structure (e.g., exchangeable). | \- Sandwich (robust) SEs protect against misspecification.<br>- Population‐level interpretation unaffected by random‐effects assumptions.<br>- Reliable even if the working correlation is incorrect. |
+
+**So how do we choose between them?**
+
+-   LMM is preferred when we want to model the clustering explicitly, estimate variance components, or examine how much mothers differ from one another. **Subject-specific effects.**
+
+-   GEE is preferred when we want robust population-average effects and are less concerned with modeling the random-effects structure. **Population level associations only.**
+
+-   In linear models with an identity link, the fixed-effect estimates from LMM and GEE are usually very similar; they differ mainly in how they treat correlation and what additional quantities they provide.
+
+-   Here we use the LMM as the baseline model because it respects clustering and provides useful diagnostics (e.g., BLUPs, ICC), while still targeting the same population-level estimand as a GEE.
+
+------------------------------------------------------------------------
+
+### `r colorize("2. Anticipating nonlinearity", "green")`
+
+EDA indicates that:
+
+-   the relationship between gestational age and birthweight is strongly nonlinear, especially around the late-preterm and early-term range;
+
+-   maternal age may have a weak or nonlinear association with birthweight.
+
+-   If linearity assumptions fail (which they will), we will introduce **spline-based smooths** for $gw$ and if needed for $age$ **using a GAM model**. Specifically, we will incorporate **penalized b-splines** using the default number of knots $(k=10)$ for initial assessment.
+
+**Why penalized splines?**
+
+Although many spline bases can be used to model nonlinear relationships, penalized splines offer a principled and practical balance of flexibility and control. In practice, analysts may choose among:
+
+-   Truncated power basis splines: Flexible but highly sensitive to knot placement; prone to overfitting unless carefully tuned.
+-   Cubic B-splines: Smooth and stable, but still require explicit decisions about the number and location of knots and do not include automatic smoothing.
+-   Penalized splines: Use a moderately large basis and a smoothing penalty selected automatically by REML or GCV. These are robust, interpretable, and require minimal manual tuning.
+
+For this module, we use penalized splines because they provide automatic control of smoothness, integrate naturally with diagnostic tools (such as the k-index), and offer a modern, reproducible approach to modeling nonlinear effects.
+
+`r colorize("Note: Both LMM and GEE can accommodate splines:", "red")`
+
+-   In LMM, spline bases (e.g., truncated power basis or B-splines) enter as additional fixed-effect columns in the design matrix $X$, optionally with random-coefficient penalties (linking back to penalized splines in Module 4).
+
+-   In GEE, we can use the same spline basis functions as predictors in the marginal mean, and then estimate $\beta$ and robust SEs with a working correlation.
+
+------------------------------------------------------------------------
+
+### `r colorize("3. Pre-specifying diagnostics", "green")`
+
+An analysis plan should not only say *what* we will fit, but also *how* we will decide whether each model in the workflow is adequate. Because we have pre-specified a two-step modeling strategy
+
+1.  Baseline LMM with linear effects of `gw` and `age` and a random intercept for `mother_id`;
+2.  Extended LMM that replaces the linear term in `gw` with a penalized B-spline,
+
+Our diagnostics will also be organized in two phases.
+
+#### Phase 1: Diagnostics for the baseline linear LMM
+
+Our baseline model is
+
+$$
+bw_{ij} = \beta_0 + \beta_1 gw_{ij} + \beta_2 age_{ij} + \theta_j + \epsilon_{ij},
+\quad \theta_j \sim N(0, \tau^2), \ \epsilon_{ij} \sim N(0, \sigma^2).
+$$
+
+After fitting this model with `lmer()`, we will perform three focused checks.
+
+1.  Mean-structure diagnostics: We will examine residuals versus fitted values and residuals versus the key predictors:
+
+-   residuals vs. fitted values,\
+-   residuals vs. `gw`,\
+-   residuals vs. `age`.
+
+*Decision Rule:* If we see clear nonlinear structure with respect to `gw`, we proceed to Phase 2 and replace the linear term in `gw` by a cubic B-spline in the LMM.
+
+2.  Distributional diagnostics for residuals.
+
+We will check approximate normality of the level-1 errors using a QQ plot of residuals. Moderate deviations are acceptable, since the Gaussian model is being used as a working model for the mean. (However, very heavy tails or extreme asymmetry may indicate that a transformation of `bw` or a more robust modeling approach is needed.)
+
+At this stage, our primary concern is whether the residuals are sufficiently well-behaved for standard LMM inference to be reliable.
+
+3.  Random-effects diagnostics.
+
+Because the correlation among siblings is captured by the mother-level random intercepts, we will inspect the empirical distribution of the BLUPs $\hat\theta_j$:
+
+-   histogram and Q--Q plot of $\hat\theta_j$ against a normal distribution,\
+-   summary of the estimated variance component $\hat\tau^2$ and the implied intraclass correlation (ICC).
+
+*Decision rule:*
+
+-   If residuals vs gw show curvature → add spline.
+
+-   If BLUPs wildly non-normal → flag for sensitivity, but continue.
+
+#### Phase 2: Diagnostics after adding a penalized B-spline for gestational week
+
+If Phase 1 diagnostics indicate substantial nonlinearity in `gw`, we extend the baseline LMM to
+
+$$
+bw_{ij} = \beta_0 + f(gw_{ij}) + \beta_2 age_{ij} + \theta_j + \epsilon_{ij},
+$$
+
+where $f(\cdot)$ is modeled via a penalized spline basis for gestational week.
+
+After fitting this spline-augmented LMM, the diagnostics focus on whether the spline has successfully captured the nonlinear pattern without overfitting.
+
+1.  Visualizing the fitted smooth.
+
+We will plot the estimated mean birthweight curve across `gw` (holding `age` at a representative value), overlaid with the observed data summarized in bins of gestational age (e.g., mean `bw` within 1-week bins).
+
+Questions we ask:
+
+-   Does the spline fit capture the clinically plausible shape (e.g., steep growth at earlier weeks, flattening near term)?\
+-   Does it remove the systematic residual patterns we saw in Phase 1?
+
+2.  Residual diagnostics revisited. We repeat the key residual plots from Phase 1:
+
+-   residuals vs. fitted values,\
+-   residuals vs. `gw`,\
+-   residuals vs. `age`,\
+-   Q--Q plot of residuals.
+
+Decision rule:
+
+-   If residuals vs. `gw` now show no strong curvature and the spread is roughly constant across `gw`, we conclude that the spline has successfully captured the main nonlinear structure in gestational age.\
+-   If substantial structure remains, we may consider increasing the flexibility of the spline (e.g., more internal knots) or, if the pattern appears to be driven by a small number of very preterm or very post-term births, conducting sensitivity analyses with those observations removed.
+
+3.Basis-dimension adequacy (K-index)
+
+When using spline bases (as in `mgcv::gam()`), the **k-index** provides a formal check of whether the chosen basis dimension `k` was large enough to capture the underlying nonlinear pattern.
+
+-   A k-index **close to 1** with a **non-significant p-value** indicates that the basis dimension was adequate.
+-   A k-index **substantially less than 1** with a **small p-value** suggests that `k` was too small and additional flexibility is needed (e.g., increase `k` or add knots).
+
+#### Phase 3: Model comparison and sensitivity checks
+
+Once both the linear LMM and the penalized-spline GAM have been fitted and diagnosed, we will compare them using **cross-validation error**. `r colorize("Note: AIC is not appropriate here because of different smoothing functions.", "red")`
+
+The final model choice (which version we present in plots and write-up) will be based on two criteria:
+
+1.  It provides a better approximation to the estimand $m(gw, age)$, as judged by diagnostics;\
+2.  It remains interpretable and consistent with clinical knowledge about how birthweight should change with gestational age and maternal age.
+
+::: {.callout-note icon="false"}
+## Workflow Summary: Model-Building Algorithm
+
+This module follows a **two-stage model-building workflow** driven by pre-specified diagnostics.\
+All steps are anchored to the estimand\
+
+$$ m(gw, age) = E[bw \mid gw, age]. $$
+
+------------------------------------------------------------------------
+
+##### **Phase 1 --- Fit the Baseline Linear LMM**
+
+Fit the model\
+
+$$
+bw_{ij} = \beta_0 + \beta_1 gw_{ij} + \beta_2age_{ij} + \theta_j + \epsilon_{ij}. 
+$$
+
+**Diagnostic checks**
+
+1.  **Residual vs. fitted plot**\
+    • should show no funnel shape or strong curvature.
+
+2.  **Residuals vs. gestational age `gw`**\
+    • if residuals trend or curve across `gw`, linearity in `gw` is violated.
+
+3.  **Residuals vs. maternal age `age`**\
+    • minor drift acceptable; major curvature suggests nonlinear age effects.
+
+4.  **Q--Q plot of residuals**\
+    • moderate deviations okay; severe asymmetry → consider variance-stabilizing transformation.
+
+5.  **Random-effects diagnostics**\
+    • BLUPs roughly normal; ICC nonzero; no extreme outlier clusters.
+
+------------------------------------------------------------------------
+
+##### **Trigger for moving to Phase 2**
+
+Proceed to Phase 2 if **any** of the following hold:
+
+-   Clear curvature in residuals vs. **gestational age**.\
+-   Patterned heteroskedasticity across `gw` (e.g., wider spread at low gestational ages).\
+-   Clinical knowledge + residuals jointly suggest a nonlinear relationship between `gw` and `bw`.
+
+If none of these occur, the linear LMM is adequate and you may stop here.
+
+------------------------------------------------------------------------
+
+##### **Phase 2 --- Fit the Spline-Augmented LMM**
+
+Replace the linear effect of gestational age with a **cubic B-spline**:
+
+$$bw_{ij} = \beta_0 + f(gw_{ij}) + \beta_2age_{ij} + \theta_j + \epsilon_{ij}, 
+$$
+
+where $f(\cdot)$ is a penalized-spline basis.
+
+**Diagnostic checks**
+
+1.  **Plot the estimated smooth ( f(gw) )**\
+    • Should match the clinical growth profile (steep early growth, flattening near term).\
+    • Overlay with binned means to confirm plausibility.
+
+2.  **Residuals vs. `gw`**\
+    • Should now be flat (no curvature).
+
+3.  **Residuals vs. fitted**\
+    • Should be roughly homoskedastic.
+
+4.  **Q--Q plot**\
+    • Should show improvement or remain similar to Phase 1.
+
+5.  **Random-effects BLUPs**\
+    • Should not reveal new structure; distribution should remain roughly normal.
+
+------------------------------------------------------------------------
+
+##### **Criteria for Accepting the Spline LMM**
+
+Choose the spline-augmented model if:
+
+-   it removes nonlinear patterns in residuals,\
+-   it gives a clinically plausible smooth curve across gestational age,\
+-   cross-validation error shows improvement.
+
+If the spline adds complexity without improving diagnostics or interpretability, prefer the simpler linear LMM.
+:::
+
+------------------------------------------------------------------------
+
+## `r colorize("4. Final Deliverables", "purple")`
+
+At the end of the workflow, the work should culminate in a set of clearly presented, reproducible deliverables that summarize
+
+(i) the modeling decisions made,
+(ii) the diagnostic evidence supporting those decisions, and
+(iii) the final estimated relationship between birthweight, gestational age, and maternal age.
+
+These deliverables serve both as a scientific summary and as documentation of a transparent, principled model-building process.
+
+#### **1. A clearly stated estimand**
+
+A concise restatement of the target quantity: $m(gw, age) = E[bw \mid gw, age]$. Explain why this estimand is population-level, how it relates to the scientific question, and how the final model approximates it.
+
+#### **2. A summary of the modeling workflow and decision points**
+
+Provide a brief narrative describing:
+
+-   the baseline linear LMM,\
+-   the diagnostics performed,\
+-   the specific diagnostic patterns that motivated the spline extension (if used),\
+-   why the final model was selected over alternatives.
+
+This should read as a short justification of your modeling path, not as a list of R commands.
+
+#### **3. The final fitted model**
+
+Present the final selected model in both:
+
+-   **statistical form** (equation), and\
+-   **computational form** (the final R call to `lmer()`).
+
+Include estimated coefficients for fixed effects, the estimated spline function (if applicable), and the variance component for the random intercept.
+
+#### **4. Visualizations of the estimated mean structure**
+
+Provide the primary visualization(s) that communicate the results:
+
+-   The fitted birthweight--gestational age curve $\hat{m}(gw, age_0)$ at a representative value of maternal age.\
+-   If splines are used, a smoothed curve with pointwise confidence bands.\
+-   Optional: overlaid binned means of the raw data for interpretability.
+
+These plots demonstrate how the model captures nonlinear growth patterns across gestational age.
+
+#### **5. Key diagnostic plots for the final model**
+
+Include the essential diagnostic figures that verify the adequacy of the chosen model:
+
+-   residuals vs. fitted values,\
+-   residuals vs. gestational age,\
+-   Q--Q plot of residuals,\
+-   distribution of random-intercept BLUPs.
+
+These confirm that the final model appropriately captures the mean structure and dependence.
+
+#### **6. Interpretation of substantive effects**
+
+A brief textual interpretation connecting results to the scientific question. Examples:
+
+-   How birthweight increases across gestational age and where the curve flattens.\
+-   The estimated population-level effect of maternal age.\
+-   The estimated between-mother variability (ICC or random-effect variance).
+
+#### **7. Reproducible appendix: Full R Workflow**
+
+Include a compact, end-to-end R script that reproduces:
+
+-   data preparation,\
+-   EDA summaries and plots,\
+-   baseline LMM,\
+-   spline extension (if used),\
+-   diagnostics,\
+-   final plots.
+
+This appendix ensures transparency and reproducibility without disrupting the narrative in the main text.
+
+Together, these deliverables provide a complete and rigorously justified estimation of $m(gw, age) = E[bw \mid gw, age]$ demonstrating a full regression workflow from estimand definition to final communication.

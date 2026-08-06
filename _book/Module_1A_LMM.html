@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Module 1A Linear Mixed Models – BIOS 526 Modern Regression Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./Module_1B_LMM.html" rel="next">
+<link href="./Module_0_MLR.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_1A_LMM.html">Module 1A Linear Mixed Models</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">BIOS 526 Modern Regression Analysis</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_0_MLR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 0: Multiple Linear Regression Review</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1A_LMM.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 1A Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1B_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1B Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1C_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1C Random Intercepts and Slopes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1_LMM_Cheet.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2A_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2A Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2B_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2B Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2C_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2C Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2D_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2D Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2_GLM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3A_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3A Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3B_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3B Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3_GEE_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4A_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4A Basis Expansion and Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4B_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4B Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4C_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4C Penalized Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4_Splines_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5A_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5A Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5B_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5B Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5_GAM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_6_workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 6 Model Selection, Diagnostics, &amp; Regression Workflow</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><strong>Overview</strong></a></li>
+  <li><a href="#motivation-and-examples" id="toc-motivation-and-examples" class="nav-link" data-scroll-target="#motivation-and-examples">Motivation and Examples</a></li>
+  <li><a href="#why-not-ols-the-wrong-approach" id="toc-why-not-ols-the-wrong-approach" class="nav-link" data-scroll-target="#why-not-ols-the-wrong-approach">Why Not OLS? <u><strong>The wrong approach</strong></u></a></li>
+  <li><a href="#the-better-approach-introducing-linear-mixed-models" id="toc-the-better-approach-introducing-linear-mixed-models" class="nav-link" data-scroll-target="#the-better-approach-introducing-linear-mixed-models"><u>The Better Approach: Introducing Linear Mixed Models</u></a>
+  <ul class="collapse">
+  <li><a href="#random-intercept-model" id="toc-random-intercept-model" class="nav-link" data-scroll-target="#random-intercept-model">Random Intercept Model</a></li>
+  <li><a href="#properties-of-the-random-intercept-model" id="toc-properties-of-the-random-intercept-model" class="nav-link" data-scroll-target="#properties-of-the-random-intercept-model">Properties of the Random Intercept Model</a></li>
+  <li><a href="#fitting-a-mixed-effects-model-with-a-random-intercept-in-r" id="toc-fitting-a-mixed-effects-model-with-a-random-intercept-in-r" class="nav-link" data-scroll-target="#fitting-a-mixed-effects-model-with-a-random-intercept-in-r">Fitting a mixed effects model with a random intercept in R:</a></li>
+  <li><a href="#covariance-structure-and-matrix-form" id="toc-covariance-structure-and-matrix-form" class="nav-link" data-scroll-target="#covariance-structure-and-matrix-form">Covariance Structure and Matrix Form</a></li>
+  <li><a href="#random-intercept-model-in-matrix-form" id="toc-random-intercept-model-in-matrix-form" class="nav-link" data-scroll-target="#random-intercept-model-in-matrix-form">Random Intercept Model in Matrix Form</a></li>
+  <li><a href="#simulation-varying-between-subject-variability" id="toc-simulation-varying-between-subject-variability" class="nav-link" data-scroll-target="#simulation-varying-between-subject-variability">Simulation Varying Between Subject Variability</a></li>
+  <li><a href="#simulation-varying-sources-of-error" id="toc-simulation-varying-sources-of-error" class="nav-link" data-scroll-target="#simulation-varying-sources-of-error">Simulation Varying Sources of Error</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span style="color: purple;">Summary</span></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Module 1A Linear Mixed Models</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><img src="fig/mixedeffects.jpeg" class="img-fluid"></p>
+<p><strong>Reading</strong></p>
+<ul>
+<li>Galecki &amp; Burzykowski (2013). Linear Mixed Effects Models using R.</li>
+<li>Fox J (2008). Applied Regression Analysis and Generalized Linear Models 2nd ed.</li>
+<li>Wood, S. <em>Generalized Additive Models</em>. Ch 2.</li>
+<li><a href="https://m-clark.github.io/mixed-models-with-R/random_intercepts.html" class="uri">https://m-clark.github.io/mixed-models-with-R/random_intercepts.html</a></li>
+<li><a href="https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf" class="uri">https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf</a></li>
+</ul>
+<section id="overview" class="level3">
+<h3 class="anchored" data-anchor-id="overview"><strong>Overview</strong></h3>
+<p>In this module, you’ll learn how to model data with hierarchical or correlated structures using <strong>linear mixed models (LMMs).</strong> These models extend standard regression to handle repeated measures or nested data structures, commonly found in longitudinal and multilevel public health data.</p>
+<p><strong>After completing this module, you will be able to:</strong></p>
+<ul>
+<li><p>Identify when LMMs are appropriate</p></li>
+<li><p>Distinguish between fixed and random effects</p></li>
+<li><p>Fit and interpret random intercept and random slope models in R</p></li>
+<li><p>Understand concepts like shrinkage, intraclass correlation, and BLUPs</p></li>
+<li><p>Hierarchical formulation of random effects models</p></li>
+</ul>
+</section>
+<section id="motivation-and-examples" class="level3">
+<h3 class="anchored" data-anchor-id="motivation-and-examples">Motivation and Examples</h3>
+<div class="illustration callout callout-style-default callout-important callout-titled" style="color: red">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Motivation:
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Correlated data structures arise when multiple observations are taken from the same unit or group: Examples include:</p>
+<ul>
+<li><strong>Longitudinal data:</strong> Repeated measures data on each subject
+<ul>
+<li><span class="math inline">\(y_{it}\)</span> denotes the measure at time <span class="math inline">\(t\)</span> for unit <span class="math inline">\(i\)</span>.</li>
+</ul></li>
+<li><strong>Clustered or multilevel data:</strong> Observations within nested group structures.
+<ul>
+<li>A collection of units from a population of similar units, e.g., <span class="math inline">\(y_{ij}\)</span> denotes measure from person <span class="math inline">\(i\)</span> in demographic group <span class="math inline">\(j\)</span>.</li>
+</ul></li>
+</ul>
+<p>Ignoring this structure can lead to biased estimates and invalid inference.</p>
+</div>
+</div>
+<p><strong>Motivating Example: The TLC Study:</strong></p>
+<p>The Treatment of Lead-Exposed Children (TLC) was examined using a placebo-controlled randomized study of succimer (a chelating agent) in children with blood lead levels of 20-44 micrograms/dL. These data consist of four repeated measurements of blood lead levels obtained at baseline (or week 0) , week 1, week 4, and week 6 on 100 children who were randomly assigned to chelation treament with succimer or placebo.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>id</code></td>
+<td>child identifier</td>
+</tr>
+<tr class="even">
+<td><code>treatment</code></td>
+<td>succimer or placebo</td>
+</tr>
+<tr class="odd">
+<td><code>week</code></td>
+<td>measurement week</td>
+</tr>
+<tr class="even">
+<td><code>lead</code></td>
+<td>lead level (outcome)</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tlcdata <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/tlc.RDS"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tlcdata)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    id treatment week lead
+1    1   placebo    0 30.8
+101  1   placebo    1 26.9
+201  1   placebo    4 25.8
+301  1   placebo    6 23.8
+2    2  succimer    0 26.5
+102  2  succimer    1 14.8</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Module_1A_LMM_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<!--::: {.callout-tip style="color: green" appearance="minimal" icon="false"}
+-   What are some scientific questions we may be interested in studying?
+:::-->
+<!--
+![](fig/blankspace.jpg){width="600" height="300"}-->
+</section>
+<section id="why-not-ols-the-wrong-approach" class="level3">
+<h3 class="anchored" data-anchor-id="why-not-ols-the-wrong-approach">Why Not OLS? <u><strong>The wrong approach</strong></u></h3>
+<p>If we ignore clustering and fit the standard linear regression (OLS): <span class="math display">\[
+\begin{align*}
+y_{ij}&amp; = \beta_0 + \beta_1 x_{ij} + \epsilon_{ij}\\
+\epsilon_{ij} &amp; \overset{iid}{\sim} N(0, \sigma^2)
+\end{align*}
+\]</span> we assume that all observations are independent.</p>
+<p>But repeated measurements from the same child are <strong>not</strong> independent.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fit.lm <span class="ot">=</span> <span class="fu">lm</span>(lead <span class="sc">~</span> week, <span class="at">data =</span> tlcdata)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit.lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = lead ~ week, data = tlcdata)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-19.775  -3.749   0.328   4.454  43.330 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  22.9760     0.6079  37.793   &lt;2e-16 ***
+week         -0.4010     0.1670  -2.401   0.0168 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 7.966 on 398 degrees of freedom
+Multiple R-squared:  0.01428,   Adjusted R-squared:  0.0118 
+F-statistic: 5.765 on 1 and 398 DF,  p-value: 0.01681</code></pre>
+</div>
+</div>
+<p><strong>What assumptions of OLS are we violating?</strong></p>
+<ul>
+<li><p><span class="math inline">\(\hat{\beta}_1\)</span> is an unbiased and consistent estimator of <span class="math inline">\(\beta_1\)</span>.</p></li>
+<li><p>Errors are not independent which leads to incorrect standard error estimates.</p></li>
+<li><p><span class="math inline">\(\sigma^2\)</span> conflates within and between child variability.</p></li>
+<li><p>Limitations: You cannot forecast individual trajectories.</p></li>
+</ul>
+</section>
+<section id="the-better-approach-introducing-linear-mixed-models" class="level2">
+<h2 class="anchored" data-anchor-id="the-better-approach-introducing-linear-mixed-models"><u>The Better Approach: Introducing Linear Mixed Models</u></h2>
+<p>LMMs are extensions of regression in which intercepts and/or slopes are allowed to vary across individual units. They were developed to deal with correlated and/or nested data.</p>
+<p>Taking our motivating example, we can assign a separate intercept for each child:</p>
+<p><span class="math display">\[
+\begin{align*}
+y_{ij} &amp;= \beta_{0i} + \beta_1 x_{ij} + \epsilon_{ij}, \\
+\epsilon_{ij} &amp; \overset{iid}{\sim} N(0, \sigma^2)
+\end{align*}
+\]</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li><span class="math inline">\(\beta_{0i}\)</span> is the <span style="color: red;">child-specific</span> weight at zero and <span class="math inline">\(\beta_1\)</span> is the constant slope.</li>
+<li><span class="math inline">\(\sigma^2\)</span> captures <span style="color: red;">within</span> child variability.</li>
+<li>The mix of random and fixed effects = mixed modeling.</li>
+</ul>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Effect Type</strong></th>
+<th><strong>Definition</strong></th>
+<th><strong>Example</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fixed</td>
+<td>Population-average effects</td>
+<td>Effect of week on lead</td>
+</tr>
+<tr class="even">
+<td>Random</td>
+<td>Child-specific deviation</td>
+<td>Child-specific intercept <span class="math inline">\(\beta_{0i}\)</span></td>
+</tr>
+<tr class="odd">
+<td>Random</td>
+<td>Child-week deviation</td>
+<td>Child-week error <span class="math inline">\(\epsilon_{ij}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>A limitation to this approach is we are estimating a lot of parameters: Subject specific coefficients don’t leverage population information and have less precision because of smaller sample sizes.</p>
+<p>In addition, we cannot forecast the outcome of a <span style="color: red;">new</span> child.</p>
+<section id="random-intercept-model" class="level3">
+<h3 class="anchored" data-anchor-id="random-intercept-model">Random Intercept Model</h3>
+<p><img src="fig/randomint.png" class="img-fluid" width="600"></p>
+<p>Consider the random intercept model with a vector of predictors <span class="math inline">\(x_{ij}\)</span>:</p>
+<p><span class="math display">\[
+\begin{align*}
+y_{ij} &amp;=\mu + \theta_i + x_{ij}^T \beta + \epsilon_{ij}\\
+\epsilon_{ij} &amp; \overset{iid}{\sim} N(0, \sigma^2)\\
+\theta_i &amp; \overset{iid}{\sim} N(0, \tau^2) \\
+\theta_i&amp; \perp \epsilon_{ij}
+\end{align*}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(\mu\)</span> = overall intercept (population mean when <span class="math inline">\(x_{ij}=0\)</span>).</p></li>
+<li><p><span class="math inline">\(\theta_i\)</span> = child specific difference from <span class="math inline">\(\mu\)</span>.</p></li>
+<li><p><span class="math inline">\(\beta_{0i} = \mu + \theta_i\)</span> participant specific intercept or child specific average.</p></li>
+<li><p><span class="math inline">\(\beta\)</span> = coefficient that does not vary across participants.</p></li>
+<li><p><span class="math inline">\(\tau^2\)</span> = between group variability.</p></li>
+<li><p><span class="math inline">\(\sigma^2\)</span> = residual variance or within group variability “measurement error”.</p></li>
+</ul>
+<p><strong>Model Assumptions:</strong></p>
+<ul>
+<li><p>We assume the random intercept and random errors are independent <span class="math inline">\(\theta_i \perp \epsilon_{ij}\)</span> for all <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span>.</p></li>
+<li><p>We assume the random intercepts are normally distributed <span class="math inline">\(\theta_i \sim N(0, \tau^2)\)</span>.</p></li>
+</ul>
+</section>
+<section id="properties-of-the-random-intercept-model" class="level3">
+<h3 class="anchored" data-anchor-id="properties-of-the-random-intercept-model">Properties of the Random Intercept Model</h3>
+<p><em>Use the expandable panels below to explore key statistical properties and their derivations.</em></p>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the overall (average) trend?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The population-level mean is computed by taking expectations over both random effects:</p>
+<p><span class="math display">\[
+\mathbb{E}[y_{ij}] = \mathbb{E}_{\theta_i, \epsilon_{ij}}[(\mu + \theta_i) + \beta x_{ij} + \epsilon_{ij}] = \mu + \beta x_{ij}
+\]</span></p>
+<p><strong>Interpretation</strong>: This is the average regression line across all individuals. The random intercept <span class="math inline">\(\theta_i\)</span> averages to 0.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the total variability around the overall trend?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Using the law of total variance:</p>
+<p><span class="math display">\[
+\begin{align*}
+\text{Var}(y_{ij}) &amp; = \text{Var}(\mu + \theta_i + \beta x_{ij} + \epsilon_{ij})\\
+&amp;  = \text{Var}(\theta_i) + \text{Var}(\epsilon_{ij}) \\
+&amp; = \tau^2 + \sigma^2
+\end{align*}
+\]</span></p>
+<p><strong>Interpretation</strong>: Total variability includes both between-subject variance (<span class="math inline">\(\tau^2\)</span>) and within-subject variance (<span class="math inline">\(\sigma^2\)</span>).</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the conditional (group-specific) trend?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Conditioning on <span class="math inline">\(\theta_i\)</span>:</p>
+<p><span class="math display">\[
+\mathbb{E}[y_{ij} \mid \theta_i] = (\mu + \theta_i) +  x_{ij}^T \beta
+\]</span></p>
+<p><strong>Interpretation</strong>: Each subject gets their own intercept offset (<span class="math inline">\(\theta_i\)</span>), producing a personalized regression line.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the conditional (within-group) residual variance?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Conditional on <span class="math inline">\(\theta_i\)</span>, the only random component is <span class="math inline">\(\epsilon_{ij}\)</span>:</p>
+<p><span class="math display">\[
+\text{Var}(y_{ij} \mid \theta_i) = \text{Var}(\epsilon_{ij}) = \sigma^2
+\]</span></p>
+<p><strong>Interpretation</strong>: Within each group (or individual), the variance reflects only the measurement error or residual noise.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="fitting-a-mixed-effects-model-with-a-random-intercept-in-r" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-a-mixed-effects-model-with-a-random-intercept-in-r">Fitting a mixed effects model with a random intercept in R:</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lmerTest)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>fit.randomeffects <span class="ot">=</span> <span class="fu">lmer</span>(lead <span class="sc">~</span> week <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>id), <span class="at">data =</span> tlcdata)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit.randomeffects)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: lead ~ week + (1 | id)
+   Data: tlcdata
+
+REML criterion at convergence: 2695.1
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.6337 -0.3461  0.0601  0.4131  6.1167 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ id       (Intercept) 29.63    5.444   
+ Residual             33.98    5.829   
+Number of obs: 400, groups:  id, 100
+
+Fixed effects:
+            Estimate Std. Error       df t value Pr(&gt;|t|)    
+(Intercept)  22.9760     0.7030 161.6442  32.683  &lt; 2e-16 ***
+week         -0.4010     0.1222 299.0000  -3.281  0.00116 ** 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+     (Intr)
+week -0.478</code></pre>
+</div>
+</div>
+<p><strong>Model Interpretation:</strong> The fixed effect captures the global or average change in lead level for every one unit change in time, i.e., from week 1 to week 2, <span class="math inline">\(\hat{\beta}_1 = -0.410\)</span>, meaning that there is an average 0.4 decrease in lead for every unit increase in week which was found to be statistically significant <span class="math inline">\(p&lt;0.01\)</span>.</p>
+<p>Now the intercept 22.97 corresponds to the <u>population-average lead at week 0</u>.</p>
+<p>The SE of the slope <span class="math inline">\(se(\hat{\beta_1}) = 0.122\)</span> capturing uncertainty associated with the estimate.</p>
+<p>The random effect of child <span class="math inline">\(\beta_{0i}\)</span> allows for child-specific random intercepts, where the variance of the intercepts is 29.63.</p>
+</section>
+<section id="covariance-structure-and-matrix-form" class="level3">
+<h3 class="anchored" data-anchor-id="covariance-structure-and-matrix-form">Covariance Structure and Matrix Form</h3>
+<p>A random intercept model is also known as a <span style="color: red;">two-level</span> variance component model:</p>
+<ul>
+<li><p><span class="math inline">\(\theta_i\)</span> is a <strong>random intercept</strong> shared by all observations in group <span class="math inline">\(i\)</span> and has a “intercept-specific” error <span class="math inline">\(\tau^2\)</span>.</p></li>
+<li><p><span class="math inline">\(\epsilon_{ij}\)</span> is the <strong>individual-level residual error</strong>.</p></li>
+</ul>
+<hr>
+<section id="derivation-textcovy_ij-y_ik-for-j-ne-k" class="level4">
+<h4 class="anchored" data-anchor-id="derivation-textcovy_ij-y_ik-for-j-ne-k">Derivation: <span class="math inline">\(\text{Cov}(y_{ij}, y_{ik})\)</span> for <span class="math inline">\(j \ne k\)</span></h4>
+<p>We now derive the <strong>covariance</strong> between two observations from the same person <span class="math inline">\(i\)</span>. Let’s expand both observations:</p>
+<p><span class="math display">\[
+\begin{aligned}
+y_{ij} &amp;= \mu + \theta_i + \beta x_{ij} + \epsilon_{ij} \\
+y_{ik} &amp;= \mu + \theta_i + \beta x_{ik} + \epsilon_{ik}
+\end{aligned}
+\]</span></p>
+<p>Then,</p>
+<p><span class="math display">\[
+\text{Cov}(y_{ij}, y_{ik}) = \text{Cov}(\theta_i + \epsilon_{ij},\ \theta_i + \epsilon_{ik})
+\]</span></p>
+<p>Using bilinearity of covariance:</p>
+<p><span class="math display">\[
+= \text{Cov}(\theta_i, \theta_i) + \text{Cov}(\theta_i, \epsilon_{ik}) + \text{Cov}(\epsilon_{ij}, \theta_i) + \text{Cov}(\epsilon_{ij}, \epsilon_{ik})
+\]</span></p>
+<p>Now plug in the assumptions:</p>
+<ul>
+<li><span class="math inline">\(\text{Var}(\theta_i) = \tau^2\)</span></li>
+<li><span class="math inline">\(\text{Cov}(\theta_i, \epsilon_{ij}) = 0\)</span></li>
+<li><span class="math inline">\(\text{Cov}(\epsilon_{ij}, \epsilon_{ik}) = 0\)</span> for <span class="math inline">\(j \ne k\)</span></li>
+</ul>
+<p>So:</p>
+<p><span class="math display">\[
+\text{Cov}(y_{ij}, y_{ik}) = \tau^2\quad  ✅
+\]</span> Observations from the same group/cluster share the same random intercept <span class="math inline">\(\theta_i\)</span>, which introduces positive correlation.</p>
+<hr>
+</section>
+<section id="derivation-textvary_ij" class="level4">
+<h4 class="anchored" data-anchor-id="derivation-textvary_ij">Derivation: <span class="math inline">\(\text{Var}(y_{ij})\)</span></h4>
+<p>Let’s derive the total (marginal) variability of an individual observation <span class="math inline">\(y_{ij}\)</span> around the population mean, after averaging over the distribution of subjects. By the law of total variance:</p>
+<p>Total variance = between-group variance + within-group variance. <span class="math display">\[
+\text{Var}(y_{ij}) = \text{Var}(\theta_i + \epsilon_{ij}) = \tau^2 + \sigma^2\quad ✅
+\]</span> ————————————————————————</p>
+</section>
+<section id="derivation-textcovy_ij-y_kj" class="level4">
+<h4 class="anchored" data-anchor-id="derivation-textcovy_ij-y_kj">Derivation: <span class="math inline">\(\text{Cov}(y_{ij}, y_{kj})\)</span></h4>
+<p>The covariance between two different subjects is assumed to be zero: <span class="math display">\[
+\text{Cov}(y_{ij}, y_{kj}) = Cov(\theta_i + \epsilon_{ij}, \theta_k + \epsilon_{kj}) = 0 \quad ✅
+\]</span></p>
+<hr>
+</section>
+<section id="covariance-matrix" class="level4">
+<h4 class="anchored" data-anchor-id="covariance-matrix">Covariance Matrix</h4>
+<p>Suppose we observe two individuals, each measured at three time points:</p>
+<ul>
+<li>Subject 1: <span class="math inline">\(y_{11}, y_{12}, y_{13}\)</span></li>
+<li>Subject 2: <span class="math inline">\(y_{21}, y_{22}, y_{23}\)</span></li>
+</ul>
+<p>The <strong>marginal covariance matrix</strong> <span class="math inline">\(\text{Cov}(\mathbf{y})\)</span> for the stacked vector:</p>
+<p><span class="math display">\[
+\mathbf{y} =
+\begin{bmatrix}
+y_{11} \\
+y_{12} \\
+y_{13} \\
+y_{21} \\
+y_{22} \\
+y_{23}
+\end{bmatrix}
+\]</span></p>
+<p>is:</p>
+<p><span class="math display">\[
+\text{Cov}(\mathbf{y}) =
+\begin{bmatrix}
+\tau^2 + \sigma^2 &amp; \tau^2 &amp; \tau^2 &amp; 0 &amp; 0 &amp; 0 \\
+\tau^2 &amp; \tau^2 + \sigma^2 &amp; \tau^2 &amp; 0 &amp; 0 &amp; 0 \\
+\tau^2 &amp; \tau^2 &amp; \tau^2 + \sigma^2 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; \tau^2 + \sigma^2 &amp; \tau^2 &amp; \tau^2 \\
+0 &amp; 0 &amp; 0 &amp; \tau^2 &amp; \tau^2 + \sigma^2 &amp; \tau^2 \\
+0 &amp; 0 &amp; 0 &amp; \tau^2 &amp; \tau^2 &amp; \tau^2 + \sigma^2 \\
+\end{bmatrix}
+\]</span></p>
+<ul>
+<li>Within a subject, all pairs of outcomes have covariance <span class="math inline">\(\tau^2\)</span>.</li>
+<li>Between subjects, outcomes are independent (covariance = 0).</li>
+<li>Diagonal entries reflect total variance: <span class="math inline">\(\tau^2 + \sigma^2\)</span>.</li>
+</ul>
+<p>This structure is known as <strong>compound symmetry</strong> within each subject (constant pairwise correlation), and <strong>block-diagonal</strong> across subjects.</p>
+<hr>
+</section>
+</section>
+<section id="random-intercept-model-in-matrix-form" class="level3">
+<h3 class="anchored" data-anchor-id="random-intercept-model-in-matrix-form">Random Intercept Model in Matrix Form</h3>
+<p>Consider the mixed model with random intercepts for <span class="math inline">\(n\)</span> groups and define <span class="math inline">\(N = \sum_{i=1}^n r_i\)</span>.</p>
+<p><span class="math display">\[
+\mathbf{y} = \mathbf{Z} \mathbf{\theta} + \mathbf{X}\mathbf{\beta} + \mathbf{\epsilon}
+\]</span></p>
+<p>where</p>
+<ul>
+<li><p><span class="math inline">\(\mathbf{y} = N \times 1\)</span> vector of response</p></li>
+<li><p><span class="math inline">\(\mathbf{Z} = N \times n\)</span> design matrix of indicator variables for each group.</p></li>
+<li><p><span class="math inline">\(\mathbf{\theta} = n \times 1\)</span> vector of random intercepts.</p></li>
+<li><p><span class="math inline">\(\mathbf{X} = N\times p\)</span> design matrix of fixed effects (including overall intercept).</p></li>
+<li><p><span class="math inline">\(\mathbf{\beta} = p\times 1\)</span> vector of fixed effects.</p></li>
+<li><p><span class="math inline">\(\mathbf{\epsilon} = N \times 1\)</span> vector of residual error.</p></li>
+</ul>
+<div class="callout callout-style-simple callout-note no-icon callout-titled" style="color: blue">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Intraclass Correlation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that the within-group covariance is <span class="math inline">\(Cov(y_{ij}, y_{ij'}) = \tau^2\)</span>. So the correlation between observations within the same group is:</p>
+<p><span class="math display">\[
+\rho = Corr(y_{ij}, y_{ij'}) = \frac{\tau^2}{\tau^2 + \sigma^2} \text{ for all }j \neq j'.
+\]</span></p>
+<ul>
+<li>The value <span class="math inline">\(\rho\)</span> is often called the <span style="color: red;">intraclass correlation</span>. It measures the degree of similarity among same-group observations <span style="color: blue;">compared to the residual error</span> <span class="math inline">\(\sigma^2\)</span>.</li>
+<li>Describes how strongly units in the same group resemble eachother.</li>
+<li><span class="math inline">\(\rho \rightarrow 0\)</span> when <span class="math inline">\(\tau^2 \rightarrow 0\)</span> (i.e.&nbsp;same intercept)</li>
+<li><span class="math inline">\(\rho \rightarrow 0\)</span> when <span class="math inline">\(\sigma^2 \rightarrow \infty\)</span> (i.e., growing measurement error).</li>
+<li><span class="math inline">\(\rho \rightarrow 1\)</span> when <span class="math inline">\(\tau^2 \rightarrow \infty\)</span> (i.e., large separation in intercepts).</li>
+<li><span class="math inline">\(\rho \rightarrow 1\)</span> when <span class="math inline">\(\sigma^2 \rightarrow 0\)</span> (i.e., zero measurement error).</li>
+<li>The above ICC has an exchangeable structure because the correlation is constant between <em>any pair</em> of within-group observations.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="simulation-varying-between-subject-variability" class="level3">
+<h3 class="anchored" data-anchor-id="simulation-varying-between-subject-variability">Simulation Varying Between Subject Variability</h3>
+<p>We simulate data for child <span class="math inline">\(i\)</span> in week <span class="math inline">\(j\)</span> using the formula below. We denote simulated quantities using <span class="math inline">\(\tilde{.}\)</span>. Note below we vary the degree of between subject variance (heterogeneity) <span class="math inline">\(\tau^2\)</span>.</p>
+<p><span class="math display">\[
+\begin{align*}
+\tilde{y}_{ij} &amp; = 22.976 - 0.4 \times \text{week}_{ij} + \tilde{\theta}_i + \tilde{\epsilon}_{ij}\\
+\tilde{\theta}_i &amp; \sim N(0, \tau^2), \quad \tau = (0.5, 16, 100)\\
+\tilde{\epsilon}_{ij} &amp; \sim N(0, \sigma^2), \quad \sigma^2 = 4
+\end{align*}
+\]</span></p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Module_1A_LMM_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="simulation-varying-sources-of-error" class="level3">
+<h3 class="anchored" data-anchor-id="simulation-varying-sources-of-error">Simulation Varying Sources of Error</h3>
+<p>We simulate repeated outcomes for child <span class="math inline">\(i\)</span> at week <span class="math inline">\(j\)</span> again under a random–intercept model with a fixed trend over time and three different levels of <strong>within-child</strong> noise <span class="math inline">\(\sigma^2\)</span>:</p>
+<p><span class="math display">\[
+\begin{align*}
+\tilde{y}_{ij} &amp; = 22.976 - 0.4 \times \text{week}_{ij} + \tilde{\theta}_i + \tilde{\epsilon}_{ij}\\
+\tilde{\theta}_i &amp; \sim N(0, \tau^2), \quad \tau^2 = 16\\
+\tilde{\epsilon}_{ij} &amp; \sim N(0, \sigma^2), \quad \sigma^2 = (0.5, 16, 100)
+\end{align*}
+\]</span></p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Module_1A_LMM_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary"><span style="color: purple;">Summary</span></h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Section</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Motivation</strong></td>
+<td>Repeated/clustered data (e.g., TLC: children measured over weeks) create within-subject correlation that standard OLS ignores.</td>
+</tr>
+<tr class="even">
+<td><strong>Why not OLS?</strong></td>
+<td>OLS fit <span class="math inline">\(y_{ij}=\beta_0+\beta_1 x_{ij}+\epsilon_{ij}\)</span> incorrectly assumes independence. Slope can be unbiased, but standard errors are wrong; <span class="math inline">\(\sigma^2\)</span> mixes within/between variability.</td>
+</tr>
+<tr class="odd">
+<td><strong>Model (random intercept)</strong></td>
+<td><span class="math inline">\(y_{ij}=\mu+\theta_i+x_{ij}^{\top}\beta+\epsilon_{ij}\)</span>, with <span class="math inline">\(\epsilon_{ij}\sim N(0,\sigma^2)\)</span>, <span class="math inline">\(\theta_i\sim N(0,\tau^2)\)</span>, and <span class="math inline">\(\theta_i\perp \epsilon_{ij}\)</span>. <span class="math inline">\(\mu\)</span> = overall intercept; <span class="math inline">\(\theta_i\)</span> = child-specific intercept shift; <span class="math inline">\(\beta\)</span> = fixed-effect slopes.</td>
+</tr>
+<tr class="even">
+<td><strong>Mean &amp; variance</strong></td>
+<td>Population mean: <span class="math inline">\(\mathbb{E}[y_{ij}]=\mu+\beta^{\top}x_{ij}\)</span>. <br> Conditional mean: <span class="math inline">\(\mathbb{E}[y_{ij}\mid \theta_i]=(\mu+\theta_i)+\beta^{\top}x_{ij}\)</span>. <br> Marginal variance: <span class="math inline">\(\operatorname{Var}(y_{ij})=\tau^2+\sigma^2\)</span>. <br> Conditional variance: <span class="math inline">\(\operatorname{Var}(y_{ij}\mid \theta_i)=\sigma^2\)</span>.</td>
+</tr>
+<tr class="odd">
+<td><strong>Covariances</strong></td>
+<td>Same subject, different times: <span class="math inline">\(\operatorname{Cov}(y_{ij},y_{ik})=\tau^2\)</span> for <span class="math inline">\(j\neq k\)</span>. <br> Different subjects: <span class="math inline">\(\operatorname{Cov}(y_{ij},y_{kj})=0\)</span> for <span class="math inline">\(i\neq k\)</span>. <br> Implies compound symmetry within subject and block-diagonal overall covariance.</td>
+</tr>
+<tr class="even">
+<td><strong>Matrix form</strong></td>
+<td><span class="math inline">\(y=Z\theta+X\beta+\epsilon\)</span>, where <span class="math inline">\(Z\)</span> maps observations to subject intercepts, <span class="math inline">\(X\)</span> is fixed-effects design.</td>
+</tr>
+<tr class="odd">
+<td><strong>Intraclass correlation</strong></td>
+<td><span class="math inline">\(\rho=\dfrac{\tau^2}{\tau^2+\sigma^2}\)</span>: proportion of total variance due to between-subject differences; larger <span class="math inline">\(\tau^2\)</span> or smaller <span class="math inline">\(\sigma^2\)</span> <span class="math inline">\(\Rightarrow\)</span> larger within-subject correlation.</td>
+</tr>
+<tr class="even">
+<td><strong>Simulation takeaways</strong></td>
+<td>Varying <span class="math inline">\(\tau^2\)</span> (between-subject variance) changes separation between subject-specific lines and increases ICC. <br> Varying <span class="math inline">\(\sigma^2\)</span> (within-subject noise) widens scatter around each subject’s line and reduces ICC.</td>
+</tr>
+<tr class="odd">
+<td><strong>Fitting &amp; interpretation (R)</strong></td>
+<td><code>lmer(lead ~ week + (1|id), data = tlcdata)</code> fits the random-intercept model. Fixed effect of <code>week</code> = average change per week; <span class="math inline">\(\hat\tau^2\)</span> = between-child variance; <span class="math inline">\(\hat\sigma^2\)</span> = within-child variance.</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./Module_0_MLR.html" class="pagination-link" aria-label="Module 0: Multiple Linear Regression Review">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Module 0: Multiple Linear Regression Review</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./Module_1B_LMM.html" class="pagination-link" aria-label="Module 1B Linear Mixed Models">
+        <span class="nav-page-text">Module 1B Linear Mixed Models</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

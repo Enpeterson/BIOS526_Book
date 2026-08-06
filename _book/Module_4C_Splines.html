@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Module 4C Penalized Splines – BIOS 526 Modern Regression Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./Module_4_Splines_Cheat.html" rel="next">
+<link href="./Module_4B_Splines.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_4C_Splines.html">Module 4C Penalized Splines</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">BIOS 526 Modern Regression Analysis</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_0_MLR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 0: Multiple Linear Regression Review</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1A_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1A Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1B_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1B Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1C_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1C Random Intercepts and Slopes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1_LMM_Cheet.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2A_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2A Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2B_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2B Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2C_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2C Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2D_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2D Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2_GLM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3A_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3A Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3B_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3B Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3_GEE_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4A_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4A Basis Expansion and Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4B_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4B Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4C_Splines.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 4C Penalized Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4_Splines_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5A_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5A Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5B_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5B Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5_GAM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_6_workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 6 Model Selection, Diagnostics, &amp; Regression Workflow</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#motivation-and-connection-to-4b" id="toc-motivation-and-connection-to-4b" class="nav-link active" data-scroll-target="#motivation-and-connection-to-4b">Motivation and Connection to 4B</a></li>
+  <li><a href="#penalized-regression-framework-the-idea-behind-penalized-splines" id="toc-penalized-regression-framework-the-idea-behind-penalized-splines" class="nav-link" data-scroll-target="#penalized-regression-framework-the-idea-behind-penalized-splines">Penalized Regression Framework: The Idea Behind Penalized Splines</a></li>
+  <li><a href="#penalized-least-squares-pls" id="toc-penalized-least-squares-pls" class="nav-link" data-scroll-target="#penalized-least-squares-pls">Penalized Least Squares (PLS)</a></li>
+  <li><a href="#constrained-vs.-penalized-form" id="toc-constrained-vs.-penalized-form" class="nav-link" data-scroll-target="#constrained-vs.-penalized-form">Constrained vs.&nbsp;Penalized Form</a></li>
+  <li><a href="#examples-of-pls-using-different-penalties" id="toc-examples-of-pls-using-different-penalties" class="nav-link" data-scroll-target="#examples-of-pls-using-different-penalties">Examples of PLS Using Different Penalties</a></li>
+  <li><a href="#pls-moving-from-constraints-to-penalties" id="toc-pls-moving-from-constraints-to-penalties" class="nav-link" data-scroll-target="#pls-moving-from-constraints-to-penalties">PLS: Moving from Constraints to Penalties</a>
+  <ul class="collapse">
+  <li><a href="#deriving-the-penalized-spline-solution" id="toc-deriving-the-penalized-spline-solution" class="nav-link" data-scroll-target="#deriving-the-penalized-spline-solution">Deriving the Penalized Spline Solution</a></li>
+  <li><a href="#derivation-of-the-closed-form-solution" id="toc-derivation-of-the-closed-form-solution" class="nav-link" data-scroll-target="#derivation-of-the-closed-form-solution"><u>Derivation of the Closed-Form Solution</u></a></li>
+  </ul></li>
+  <li><a href="#fitting-penalized-splines-in-r" id="toc-fitting-penalized-splines-in-r" class="nav-link" data-scroll-target="#fitting-penalized-splines-in-r">Fitting Penalized Splines in R</a></li>
+  <li><a href="#choosing-largelambda-generalized-cross-validation-gcv" id="toc-choosing-largelambda-generalized-cross-validation-gcv" class="nav-link" data-scroll-target="#choosing-largelambda-generalized-cross-validation-gcv">Choosing <span class="math inline">\(\large{\lambda}\)</span>: Generalized Cross-Validation (GCV)</a></li>
+  <li><a href="#coming-back-to-our-model-findings" id="toc-coming-back-to-our-model-findings" class="nav-link" data-scroll-target="#coming-back-to-our-model-findings">Coming Back to Our Model Findings</a></li>
+  <li><a href="#smoothing-splines-limiting-case-conceptual-connection" id="toc-smoothing-splines-limiting-case-conceptual-connection" class="nav-link" data-scroll-target="#smoothing-splines-limiting-case-conceptual-connection">Smoothing Splines (Limiting Case, Conceptual Connection)</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span style="color: purple;">Summary</span></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Module 4C Penalized Splines</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><img src="fig/bsplines.png" class="img-fluid"></p>
+<section id="motivation-and-connection-to-4b" class="level3">
+<h3 class="anchored" data-anchor-id="motivation-and-connection-to-4b">Motivation and Connection to 4B</h3>
+<div class="illustration callout callout-style-default callout-important callout-titled" style="color: red">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Motivation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In Module 4B, we learned about parametric splines, where we fit piecewise polynomial segments joined at knots. These splines required us to choose both the number and location of the knots.</p>
+<p>If we choose too few knots, the fit is too rigid and misses local patterns (high bias). If we choose too many knots, the spline can overfit and capture random noise (high variance).</p>
+<p>Question: Is there a way to include many knots for flexibility but automatically control how wiggly the curve becomes?</p>
+<p>Answer: Yes — by adding a penalty for roughness. This leads to penalized splines and smoothing splines.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="penalized-regression-framework-the-idea-behind-penalized-splines" class="level2">
+<h2 class="anchored" data-anchor-id="penalized-regression-framework-the-idea-behind-penalized-splines">Penalized Regression Framework: The Idea Behind Penalized Splines</h2>
+<p>We begin with the regression model:</p>
+<p><span class="math display">\[
+y_i = g(x_i) + \varepsilon_i, \quad \varepsilon_i \sim N(0,\sigma^2)
+\]</span></p>
+<p>and approximate the unknown function <span class="math inline">\(g(x)\)</span> using a flexible basis representation with large fixed <span class="math inline">\(K\)</span> is <span style="color: red;">unknown</span>.</p>
+<p>Instead of forcing <span class="math inline">\(g(x)\)</span> to have a specific parametric form, we approximate it using many basis functions:</p>
+<p><span class="math display">\[
+g(x) = \sum_{k=1}^K \beta_k b_k(x)
+\]</span> In Module 4B, we chose <span class="math inline">\(K\)</span> by deciding where to put knots. Here we take a different approach.</p>
+<p>The main idea is we start with a lot of knots. This ensures we will not miss important fine-scale behavior. Next, we assume most of the knots are not useful and <span style="color: red;">shrink</span> their coefficients towards zero. We determine the amount of <span style="color: red;">shrinkage</span> based on some criteria (.e.g, CV, GCV, AIC). Benefits of this approach:</p>
+<ul>
+<li>Knot placement is not important if the number if dense enough, but be cautious for overfitting.</li>
+<li>Shrinking most coefficients to zero will stabilize model estimation similar to performing variable selection.</li>
+<li>Data decide how much flexibility is needed.</li>
+</ul>
+<hr>
+</section>
+<section id="penalized-least-squares-pls" class="level2">
+<h2 class="anchored" data-anchor-id="penalized-least-squares-pls">Penalized Least Squares (PLS)</h2>
+<p><em>Intuition: Ordinary least squares minimizes the sum of squared residuals. Penalized least squares adds a second term that discourages unnecessary complexity in the fitted function.</em></p>
+<p>To estimate <span class="math inline">\(g(x)\)</span> we minimize a <span style="color: blue;">penalized residual sum of squares</span>:</p>
+<p><span class="math display">\[
+\text{PLS}(\lambda) = \sum_{i=1}^{n} (y_i - g(x_i))^2 + \underset{\text{roughness}}{\lambda J(g)},
+\]</span></p>
+<p>where:</p>
+<ul>
+<li>The first term measures fit to the data.</li>
+<li>The second term <span class="math inline">\(J(g)\)</span> measures the roughness of the function.</li>
+<li><span class="math inline">\(\lambda\)</span> controls the tradeoff between fit and smoothness.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Interpretation of <span class="math inline">\(\lambda\)</span>:</p>
+<p>Small <span class="math inline">\(\lambda\)</span> → minimal penalty → curve follows data closely (wiggly fit).</p>
+<p>Large <span class="math inline">\(\lambda\)</span> → heavy penalty → smoother curve (may miss fine details).</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="constrained-vs.-penalized-form" class="level2">
+<h2 class="anchored" data-anchor-id="constrained-vs.-penalized-form">Constrained vs.&nbsp;Penalized Form</h2>
+<p>There are two equivalent ways to control how smooth the estimated function is: we can either place a hard limit on its wiggliness (constrained form) or penalize wiggliness directly in the objective function (penalty form).</p>
+<ul>
+<li>(a) Constrained Form:<br>
+Minimize <span class="math inline">\(\sum (y_i - g(x_i))^2\)</span> subject to <span class="math inline">\(J(g) \leq c\)</span>.</li>
+</ul>
+<p>Here we allow the curve to fit the data but restrict its total roughness, i.e., fit the data well, but don’t let the function be too rough. The constant <span class="math inline">\(c\)</span> sets an upperbound on how wiggly <span class="math inline">\(g(x)\)</span> can be. This is computationally inconvenient.</p>
+<p>Equivalently,</p>
+<ul>
+<li>(b) Penalty Form:<br>
+Minimize <span class="math inline">\(\sum (y_i - g(x_i))^2 + \lambda J(g)\)</span>.</li>
+</ul>
+<p>Here, we trade off between fit and smoothness. The constant <span class="math inline">\(\lambda\)</span> acts as a Lagrange multiplier linked to constraint <span class="math inline">\(c\)</span>, i.e., fit the data and smoothness simultaneously-balancing them through <span class="math inline">\(\lambda\)</span>.</p>
+<hr>
+</section>
+<section id="examples-of-pls-using-different-penalties" class="level2">
+<h2 class="anchored" data-anchor-id="examples-of-pls-using-different-penalties">Examples of PLS Using Different Penalties</h2>
+<p>Penalized Least Squares (PLS) can take different forms depending on what we choose to penalize</p>
+<ol type="I">
+<li><span style="color: red;">Ridge regression</span>- <span class="math inline">\(J(g)\)</span> penalizes the <strong>size of the coefficients</strong>.</li>
+</ol>
+<p><span class="math display">\[
+J(g) = \sum_{m=1}^M \beta_m^2 = ||\beta||_2^2 \leq C
+\]</span></p>
+<p>where <span class="math inline">\(||\beta||_2\)</span> is the L2-Norm and <span class="math inline">\(C\)</span> is a positive constant. Ridge regression using the <span class="math inline">\(L2-\)</span> penalty which does not induce sparsity because is does not set <span class="math inline">\(\beta's\)</span> exactly to 0.</p>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+L2 Definition
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The L2 norm, also called the Euclidean norm, is a measure of the magnitude (or length) of a vector in Euclidean space. It is defined as:</p>
+<p><span class="math display">\[
+\|\mathbf{v}\|_2 = \sqrt{v_1^2 + v_2^2 + \dots + v_n^2} = \sqrt{\sum_{i=1}^n v_i^2}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{v} = [v_1, v_2, \dots, v_n]\)</span> is a vector in <span class="math inline">\(\mathbb{R}^n\)</span>.</p>
+<p>The L2 norm is the square root of the sum of the squared elements of the vector.</p>
+<p>Properties:</p>
+<p>1. Non-Negativity</p>
+<p><span class="math display">\[
+\|\mathbf{v}\|_2 \geq 0
+\]</span></p>
+<ul>
+<li><span class="math inline">\(\|\mathbf{v}\|_2 = 0\)</span> if and only if <span class="math inline">\(\mathbf{v} = 0\)</span>.</li>
+</ul>
+<ol start="2" type="1">
+<li>Scalability: If <span class="math inline">\(c\)</span> is a scalar:</li>
+</ol>
+<p><span class="math display">\[
+\|c \mathbf{v}\|_2 = |c| \cdot \|\mathbf{v}\|_2
+\]</span></p>
+<ol start="3" type="1">
+<li>Triangle Inequality: For two vectors <span class="math inline">\(\mathbf{u}\)</span> and <span class="math inline">\(\mathbf{v}\)</span>:</li>
+</ol>
+<p><span class="math display">\[
+\|\mathbf{u} + \mathbf{v}\|_2 \leq \|\mathbf{u}\|_2 + \|\mathbf{v}\|_2
+\]</span></p>
+<ol start="4" type="1">
+<li>Geometric Interpretation: The L2 norm corresponds to the Euclidean distance from the origin to the point <span class="math inline">\(\mathbf{v}\)</span> in <span class="math inline">\(n\)</span>-dimensional space. For a 2D vector <span class="math inline">\(\mathbf{v} = [x, y]\)</span>, the L2 norm is:</li>
+</ol>
+<p><span class="math display">\[
+\|\mathbf{v}\|_2 = \sqrt{x^2 + y^2}
+\]</span></p>
+<p>This is the standard distance formula in 2D geometry.</p>
+</div>
+</div>
+</div>
+<ol start="2" type="I">
+<li><span style="color: red;">Lasso</span>- <span class="math inline">\(J(g)\)</span> penalizes the <strong>size of the coefficients</strong> using the <span class="math inline">\(L_1\)</span> norm.</li>
+</ol>
+<p><span class="math display">\[
+J(g) = \|\beta\|_1 \leq C,
+\]</span><br>
+where <span class="math inline">\(\|\beta\|_1\)</span> is the L1-Norm and <span class="math inline">\(C\)</span> is a positive constant.</p>
+<p>LASSO applies an <span class="math inline">\(L1\)</span> penalty, which encourages sparsity in the coefficients.<br>
+Unlike Ridge regression, Lasso can set some <span class="math inline">\(\beta\)</span>’s exactly to 0, effectively performing variable selection while also regularizing the model.</p>
+<p>Mathematically, this corresponds to solving:</p>
+<p><span class="math display">\[
+\min_{\boldsymbol{\beta}} \sum_{i=1}^{n} (y_i - g(x_i))^2 + \lambda \sum_{m=1}^{M} |\beta_m|,
+\]</span></p>
+<p>where <span class="math inline">\(\lambda\)</span> controls the amount of shrinkage.</p>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+L1 Definition
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The L1 norm, also known as the Manhattan norm or taxicab norm, measures the total absolute magnitude of a vector. It is defined as:</p>
+<p><span class="math display">\[
+\|\mathbf{v}\|_1 = |v_1| + |v_2| + \dots + |v_n| = \sum_{i=1}^n |v_i|
+\]</span></p>
+<p>for a vector <span class="math inline">\(\mathbf{v} = [v_1, v_2, \dots, v_n]\)</span> in <span class="math inline">\(\mathbb{R}^n\)</span>.</p>
+<p>Properties:</p>
+<ol type="1">
+<li><p>Non-Negativity:<br>
+<span class="math display">\[
+\|\mathbf{v}\|_1 \geq 0, \quad \text{and } \|\mathbf{v}\|_1 = 0 \text{ iff } \mathbf{v} = 0.
+\]</span></p></li>
+<li><p>Scalability: For a scalar <span class="math inline">\(c\)</span>:<br>
+<span class="math display">\[
+\|c\mathbf{v}\|_1 = |c| \cdot \|\mathbf{v}\|_1
+\]</span></p></li>
+<li><p>Triangle Inequality: For any vectors <span class="math inline">\(\mathbf{u}\)</span> and <span class="math inline">\(\mathbf{v}\)</span>:<br>
+<span class="math display">\[
+\|\mathbf{u} + \mathbf{v}\|_1 \leq \|\mathbf{u}\|_1 + \|\mathbf{v}\|_1
+\]</span></p></li>
+<li><p>Geometric Interpretation:<br>
+The L1 norm corresponds to the sum of absolute distances along each axis from the origin to the point <span class="math inline">\(\mathbf{v}\)</span>.<br>
+In 2D, this is the total “city-block distance” you’d travel along grid lines:<br>
+<span class="math display">\[
+\|\mathbf{v}\|_1 = |x| + |y|
+\]</span><br>
+The L1 constraint region forms a diamond shape in 2D, which causes some coefficients to hit exactly zero—unlike the circular constraint region in Ridge regression.<br>
+</p></li>
+</ol>
+</div>
+</div>
+</div>
+<p><span style="color: blue;">Connection to Penalized Splines:</span> Ridge and Lasso are both examples of the penalized least squares framework:</p>
+<p><span class="math display">\[
+\sum_i (y_i - g(x_i))^2 + \lambda J(g)
+\]</span> In these cases, <span class="math inline">\(J(g)\)</span> penalizes the <u>size of the coefficients</u>.</p>
+<hr>
+</section>
+<section id="pls-moving-from-constraints-to-penalties" class="level2">
+<h2 class="anchored" data-anchor-id="pls-moving-from-constraints-to-penalties">PLS: Moving from Constraints to Penalties</h2>
+<p>For <span style="color: red;">Penalized Spline</span>, the same principle is used — but <span class="math inline">\(J(g)\)</span> penalizes the <em>roughness of the function, rather than the size of the coefficients.</em> In other words, the penalty smooths the <strong>entire fitted curve</strong>, not just the individual coefficients.</p>
+<p>Mathematically, this is achieved y penalizing the integrated squared second derivative:<br>
+<span class="math display">\[
+J(g) = \int [g''(x)]^2 dx
+\]</span></p>
+<p>This quantity measures how rapidly the function <span class="math inline">\(g(x)\)</span> bends or changes curvature (wiggliness). Large values of <span class="math inline">\(J(g)\)</span> indicate a very wiggly function, while smaller values correspond to smoother curves.<br>
+By adding <span class="math inline">\(\lambda J(g)\)</span> to our objective function, we control the trade-off between smoothness and fit.</p>
+<!-- **Constrained Formulation**: We define the objective function as: -->
+<!-- $$ -->
+<!-- \text{argmin}_{\beta} \quad (Y - X\beta)'(Y - X\beta) \quad \text{subject to} \quad \beta'B\beta \leq C. -->
+<!-- $$ -->
+<!-- The term $(Y - X\beta)'(Y - X\beta)$ represents the **residual sum of squares (RSS)** or the **squared error term**. Measure of model fit. -->
+<!-- -   Smaller values indicate a better fit. -->
+<!-- -   Want to minimize RSS, i.e., find $\beta$ that makes the model predictions $X\beta$ close to observed $y$. -->
+<!-- **Constraint** : -->
+<!-- The constraint $\beta'B\beta \leq C$ imposes a penalty on the coefficients $\beta$: -->
+<!-- -   $\beta'B\beta$ is a **quadratic form**, where $B=$ a diagonal matrix with 0s and 1s. -->
+<!-- -   $B$ selects which coefficients are penalized: -->
+<!--     -   1 in $B$ means that the corresponding coefficient in this $\beta$ is penalized. -->
+<!--     -   0 in $B$ means the corresponding coefficient is **not penalized**. -->
+<!-- -   $C$ is a threshold that limits the total magnitude of the penalized coefficients. -->
+<!-- ## Penalty Formulation -->
+<!-- ::: {.callout-important style="color: red"} -->
+<!-- This problem can be equivalently formulated without constraint $C$ as -->
+<!-- $$ -->
+<!-- \text{argmin}_{\beta} \quad (Y - X\beta)'(Y - X\beta) + \overset{\text{penalty function}}{\lambda \beta'B\beta} -->
+<!-- $$ -->
+<!-- ::: -->
+<!-- There is a one-to-one mapping between $\lambda$ and the constraint $C$, i.e., for each $\lambda$ you can find a corresponding $C$. -->
+<!-- -   The **smoothing parameter**, $\lambda$, controls the trade-off between: -->
+<!--     -   Minimizing the residual sum of squares (fit to the data). -->
+<!--     -   Penalizing complexity of the model (regularization term $\beta'B\beta$). -->
+<!-- -   A larger value of $\lambda$ increases the penalty, resulting in a smoother (less complex) model. -->
+<!-- -   A smaller value of \$\lambda \$ allows more flexibility, potentially fitting the data more closely but risking overfitting. -->
+<!-- -   Why This Matters -->
+<!--     -   Constraint-based and penalty-based---are equivalent in theory but have different practical uses: -->
+<!--     -   Constraint-based Formulation: Useful for explicitly enforcing a limit on model complexity (e.g., in constrained optimization problems). -->
+<!--     -   Penalty-based Formulation: Easier to solve using standard optimization techniques and more common in regularization methods like Ridge Regression or Smoothing Splines. -->
+<hr>
+<section id="deriving-the-penalized-spline-solution" class="level3">
+<h3 class="anchored" data-anchor-id="deriving-the-penalized-spline-solution">Deriving the Penalized Spline Solution</h3>
+<p>We now express the penalized spline problem in matrix form. This will show that the solution has the same algebraic form as ridge regression, even though the penalty targets curvature rather than coefficient size.</p>
+<p>Let <span class="math inline">\(\mathbf{B}\)</span> be the basis matrix (each column a basis function evaluated at all <span class="math inline">\(x_i\)</span>), and let <span class="math inline">\(\boldsymbol{\beta}\)</span> be the corresponding coefficient vector. Then the PLS criterion can be written as</p>
+<p><span class="math display">\[
+\text{PLS}(\lambda) = (\mathbf{y} - \mathbf{B}\boldsymbol{\beta})'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta}) + \lambda \underbrace{\boldsymbol{\beta}'\mathbf{K}\boldsymbol{\beta}}_{J(g) = \int[g''(x)]^2dx},
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{K}\)</span> is a known penalty matrix that encodes curvature or “wiggliness” of the fitted function.Typically, <span class="math inline">\(\mathbf{K}\)</span> is derived from <span class="math inline">\(\int b_k''(x)b_l''(x)dx\)</span>, so that large curvature is penalized.</p>
+</section>
+<section id="derivation-of-the-closed-form-solution" class="level3">
+<h3 class="anchored" data-anchor-id="derivation-of-the-closed-form-solution"><u>Derivation of the Closed-Form Solution</u></h3>
+<section id="optimization-problem" class="level4">
+<h4 class="anchored" data-anchor-id="optimization-problem"><em>Optimization Problem</em></h4>
+<p>We seek to minimize the penalized least squares criterion:</p>
+<p><span class="math display">\[
+\underset{\boldsymbol{\beta}}{\text{minimize}}
+\quad (\mathbf{y} - \mathbf{B}\boldsymbol{\beta})'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta})
++ \lambda\, \boldsymbol{\beta}'\mathbf{K}\boldsymbol{\beta}.
+\]</span></p>
+</section>
+<section id="differentiate-with-respect-to-boldsymbolbeta" class="level4">
+<h4 class="anchored" data-anchor-id="differentiate-with-respect-to-boldsymbolbeta">1. Differentiate with respect to <span class="math inline">\(\boldsymbol{\beta}\)</span></h4>
+<p><span class="math display">\[
+-2\mathbf{B}'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta}) + 2\lambda\mathbf{K}\boldsymbol{\beta} = 0.
+\]</span></p>
+</section>
+<section id="simplify" class="level4">
+<h4 class="anchored" data-anchor-id="simplify">2. Simplify</h4>
+<p><span class="math display">\[
+\mathbf{B}'\mathbf{B}\boldsymbol{\beta} + \lambda\mathbf{K}\boldsymbol{\beta} = \mathbf{B}'\mathbf{y}.
+\]</span></p>
+</section>
+<section id="rearrange-terms" class="level4">
+<h4 class="anchored" data-anchor-id="rearrange-terms">3. Rearrange Terms</h4>
+<p><span class="math display">\[
+(\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})\boldsymbol{\beta} = \mathbf{B}'\mathbf{y}.
+\]</span></p>
+</section>
+<section id="closed-form-ridge-type-solution" class="level4">
+<h4 class="anchored" data-anchor-id="closed-form-ridge-type-solution">4. Closed-Form (Ridge-Type) Solution</h4>
+<p><span class="math display">\[
+\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'\mathbf{y}.
+\]</span></p>
+</section>
+<section id="interpretation-of-lambda" class="level4">
+<h4 class="anchored" data-anchor-id="interpretation-of-lambda">Interpretation of <span class="math inline">\(\lambda\)</span></h4>
+<ul>
+<li><p><span class="math inline">\(\lambda = 0\)</span>:<br>
+The penalty disappears and <span class="math inline">\(\hat{\boldsymbol{\beta}}\)</span> reduces to the ordinary least squares (OLS) estimate.</p></li>
+<li><p><span class="math inline">\(\lambda \to \infty\)</span>:<br>
+The penalty dominates; higher-order coefficients shrink toward zero, producing a smoother (even linear) function.</p></li>
+<li><p><strong>Intercept and linear terms (</strong><span class="math inline">\(\beta_0\)</span>, <span class="math inline">\(\beta_1\)</span>) are usually <em>not penalized</em>, allowing the fitted spline to capture the overall level and trend freely. |</p></li>
+</ul>
+<hr>
+</section>
+</section>
+</section>
+<section id="fitting-penalized-splines-in-r" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-penalized-splines-in-r">Fitting Penalized Splines in R</h2>
+<p>Let’s revisit our NYC daily mortality data. We can use a penalized spline on <code>date_num</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(splines)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mgcv)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="fu">file.path</span>(<span class="fu">getwd</span>(), <span class="st">"data"</span>, <span class="st">"NYC.RData"</span>))  <span class="co"># expects object `health`</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure date is numeric for bs(); keep original for labeling</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>date_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(health<span class="sc">$</span>date)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 1. Unpenalized spline (ordinary regression spline) ---</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>fit_unpen <span class="ot">&lt;-</span> <span class="fu">lm</span>(alldeaths <span class="sc">~</span> <span class="fu">bs</span>(date_num, <span class="at">df =</span> <span class="dv">40</span>), <span class="at">data =</span> health)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 2. Penalized spline (penalized B-spline, ps basis) ---</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>fit_pen <span class="ot">&lt;-</span> <span class="fu">gam</span>(alldeaths <span class="sc">~</span> <span class="fu">s</span>(date_num, <span class="at">k =</span> <span class="dv">40</span>, <span class="co">#k=40 is defaulty</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>                             <span class="at">bs =</span> <span class="st">"ps"</span>),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> health, </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">method =</span> <span class="st">"GCV.Cp"</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Plot comparison ---</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(health<span class="sc">$</span>date_num, health<span class="sc">$</span>alldeaths, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.6</span>,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="st">"gray50"</span>, <span class="at">main =</span> <span class="st">"Penalized vs Unpenalized Splines"</span>,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Date (numeric)"</span>, <span class="at">ylab =</span> <span class="st">"All Deaths"</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Add unpenalized spline fit (red, more wiggly)</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(health<span class="sc">$</span>date_num, <span class="fu">fitted</span>(fit_unpen), <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Add penalized spline fit (blue, smoother)</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(health<span class="sc">$</span>date_num, <span class="fu">fitted</span>(fit_pen), <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Unpenalized (OLS spline, λ = 0)"</span>,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"Penalized (GCV-selected λ)"</span>),</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"red"</span>, <span class="st">"blue"</span>), <span class="at">lwd =</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="dv">3</span>), <span class="at">lty =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>), <span class="at">bty =</span> <span class="st">"n"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Module_4C_Splines_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>The <strong>gray points</strong> show daily (or observed) values of all deaths in NYC.<br>
+</li>
+<li>The <strong>red curve</strong> represents the <em>unpenalized spline fit</em>.
+<ul>
+<li>It follows the data very closely, producing a wiggly fit.</li>
+<li>This corresponds to <strong>λ = 0</strong>, i.e., no smoothness penalty.</li>
+<li>High flexibility → <strong>low bias, high variance</strong>.<br>
+</li>
+</ul></li>
+<li>The <strong>blue curve</strong> represents the <em>penalized spline fit</em>.
+<ul>
+<li>The penalty term discourages excessive curvature, yielding a smoother trend.</li>
+<li>The model automatically chooses the optimal <strong>λ</strong> by REML (or GCV).</li>
+<li>Moderate flexibility → <strong>balanced bias–variance trade-off</strong>.<br>
+</li>
+</ul></li>
+<li>The comparison shows that <strong>penalization reduces random wiggles</strong> while retaining major seasonal patterns. Conceptually, the penalty <u>shrinks</u> the coefficients associated with high-order basis functions toward zero— just as predicted by the <strong>ridge-type matrix solution</strong> <span class="math inline">\(\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'\mathbf{y}\)</span>.</li>
+</ul>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>So far, we’ve seen that <span class="math inline">\(\lambda\)</span> controls the trade-off between fit and smoothness: Small <span class="math inline">\(\lambda\)</span> → minimal penalty → very flexible (wiggly) curve. Large <span class="math inline">\(\lambda\)</span> → heavy penalty → smoother curve (possibly underfit). But how do we choose the “right” amount of smoothing? We need a method to balance goodness of fit and model complexity.</p>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="choosing-largelambda-generalized-cross-validation-gcv" class="level2">
+<h2 class="anchored" data-anchor-id="choosing-largelambda-generalized-cross-validation-gcv">Choosing <span class="math inline">\(\large{\lambda}\)</span>: Generalized Cross-Validation (GCV)</h2>
+<p>The <strong>smoothing parameter</strong> <span class="math inline">\(\lambda\)</span> controls the trade-off between <strong>fit</strong> and <strong>smoothness</strong> (i.e., the bias–variance tradeoff). Choosing <span class="math inline">\(\lambda\)</span> too small leads to an overfitted, wiggly curve; choosing it too large leads to an oversmoothed, biased curve.</p>
+<p>You can think of it like the story of “Goldie-Locks and the three Bears”:</p>
+<ul>
+<li><strong>Too little smoothing</strong> (small <span class="math inline">\(\lambda\)</span>) → the fit is <em>too rough</em> (high variance).<br>
+</li>
+<li><strong>Too much smoothing</strong> (large <span class="math inline">\(\lambda\)</span>) → the fit is <em>too flat</em> (high bias).<br>
+</li>
+<li>The <em>“just right”</em> <span class="math inline">\(\lambda\)</span> finds the balance between flexibility and stability.</li>
+</ul>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Module_4C_Splines_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>To select <span class="math inline">\(\lambda\)</span>, we can minimize the Generalized Cross-Validation <strong>GCV criterion</strong>, a computational shortcut to LOO validation:</p>
+<p><span class="math display">\[
+\text{GCV}(\lambda) = \frac{\frac{1}{n}\sum_i (y_i - \hat{y}_i)^2}{[1 - \text{trace}(\mathbf{S}_\lambda)/n]^2}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{S}_\lambda = \mathbf{B}(\mathbf{B}'\mathbf{B} + \lambda \mathbf{K})^{-1}\mathbf{B}'\)</span> is the <strong>smoother matrix</strong>.</p>
+<p>The smoother matrix <span class="math inline">\(\mathbf{S}_\lambda\)</span> maps <span class="math inline">\(\mathbf{y}\)</span> to its fitted values:</p>
+<p><span class="math display">\[
+\hat{\mathbf{y}} = \mathbf{S}_\lambda \mathbf{y}.
+\]</span></p>
+<p>The <strong>effective degrees of freedom</strong> are defined as:</p>
+<p><span class="math display">\[
+\text{edf} = \text{trace}(\mathbf{S}_\lambda).
+\]</span></p>
+<ul>
+<li>Small <span class="math inline">\(\lambda\)</span> → edf ≈ number of parameters (flexible fit).<br>
+</li>
+<li>Large <span class="math inline">\(\lambda\)</span> → edf ≈ 2 (approaches a line).</li>
+</ul>
+<p><span style="color: blue;">edf quantifies the model’s effective flexibility—how many ‘free bends’ the spline is allowed to have.</span></p>
+<ul>
+<li>The numerator is the mean squared error (avg lack of fit).</li>
+<li>The denominator corrects for model complexity (effective degrees of freedom).</li>
+<li><span class="math inline">\(\lambda\)</span> that minimizes the GCV achieves the “just right” fit.</li>
+</ul>
+<p><span style="color: blue;">GCV provides an automatic, data-driven way to select the smoothness level.</span></p>
+<hr>
+</section>
+<section id="coming-back-to-our-model-findings" class="level2">
+<h2 class="anchored" data-anchor-id="coming-back-to-our-model-findings">Coming Back to Our Model Findings</h2>
+<p>Now that we understand how <strong>GCV</strong> selects the smoothing parameter and how the <strong>effective degrees of freedom (edf)</strong> quantify smoothness, we can interpret our fitted penalized spline model:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_pen)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+alldeaths ~ s(date_num, k = 40, bs = "ps")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 143.9168     0.3068   469.1   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+              edf Ref.df     F p-value    
+s(date_num) 36.48  37.97 36.83  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.429   Deviance explained =   44%
+GCV =  175.5  Scale est. = 171.89    n = 1826</code></pre>
+</div>
+</div>
+<p><strong>Model Interpretation</strong></p>
+<ul>
+<li><p>The model was fit using <strong>(GCV)</strong> to choose the optimal smoothing parameter <span class="math inline">\(\lambda\)</span>.<br>
+GCV automatically balances model fit and smoothness.The <strong>GCV score = 175.5</strong> and estimated <strong>scale = 171.9</strong> quantify residual variability and model adequacy.</p></li>
+<li><p>The estimated smooth term <code>s(date_num)</code> has<br>
+<strong>effective degrees of freedom (edf) = 36.48</strong> (out of 40 possible), meaning the fitted curve is fairly flexible but still penalized to avoid overfitting.</p></li>
+<li><p>The smooth term is <strong>highly significant</strong> (<em>F = 36.83, p &lt; 2 × 10⁻¹⁶</em>), indicating a strong nonlinear temporal pattern in daily deaths.</p></li>
+<li><p>The <strong>intercept = 143.9</strong> represents the estimated average number of deaths (baseline level) after centering effects.</p></li>
+<li><p>The model explains about <strong>44 % of the total variability</strong> in the outcome<br>
+(<em>Deviance explained = 44 %, R²₍adj₎ = 0.43</em>), which is typical for real-world time-series mortality data.</p></li>
+</ul>
+<hr>
+</section>
+<section id="smoothing-splines-limiting-case-conceptual-connection" class="level2">
+<h2 class="anchored" data-anchor-id="smoothing-splines-limiting-case-conceptual-connection">Smoothing Splines (Limiting Case, Conceptual Connection)</h2>
+<p>A <strong>smoothing spline</strong> is a special case of the penalized spline where we place a knot at every unique <span class="math inline">\(x_i\)</span> but penalize curvature to prevent overfitting. The estimation problem becomes:</p>
+<p><span class="math display">\[
+\min_g \sum_{i=1}^{n} (y_i - g(x_i))^2 + \lambda \int [g''(x)]^2 dx,
+\]</span></p>
+<p>where <span class="math inline">\(\lambda\)</span> controls the trade-off between fidelity to the data and smoothness of the curve.</p>
+<ul>
+<li>Small <span class="math inline">\(\lambda\)</span> → the curve follows the data closely (wiggly).<br>
+</li>
+<li>Large <span class="math inline">\(\lambda\)</span> → the curve becomes smoother, approaching a straight line.</li>
+</ul>
+<p>The solution <span class="math inline">\(g(x)\)</span> can be shown (via calculus of variations) to be a <strong>natural cubic spline</strong> with knots at all unique <span class="math inline">\(x_i\)</span>.<br>
+In practice, smoothing splines are conceptually elegant but computationally intensive for large <span class="math inline">\(n\)</span>, so <strong>penalized B-splines (P-splines)</strong> are preferred in most applications.</p>
+<p><span style="color: blue;">Smoothing splines illustrate the extreme limit of penalized splines—maximal flexibility regulated entirely by λ.</span></p>
+<hr>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary"><span style="color: purple;">Summary</span></h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 73%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><strong>Section</strong></th>
+<th style="text-align: left;"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Penalized Regression Framework</strong></td>
+<td style="text-align: left;">Estimates <span class="math inline">\(g(x)\)</span> by minimizing the <em>penalized least squares criterion</em>: <span class="math display">\[\text{PLS}(\lambda) = \sum_{i=1}^{n}(y_i - g(x_i))^2 + \lambda J(g).\]</span> The first term measures goodness of fit; the second penalizes roughness.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Matrix Formulation</strong></td>
+<td style="text-align: left;">In matrix form, the ridge-type estimator is <span class="math display">\[\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda \mathbf{K})^{-1}\mathbf{B}'\mathbf{y}.\]</span> Penalization shrinks coefficients associated with high curvature toward zero.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Penalty Matrix</strong> <span class="math inline">\(\mathbf{K}\)</span></td>
+<td style="text-align: left;">Encodes curvature or “wiggliness” through <span class="math display">\[K_{kl} = \int b_k''(x)b_l''(x)\,dx.\]</span> Large curvature implies larger penalty and smoother estimated functions.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Smoothing Parameter</strong> <span class="math inline">\(\lambda\)</span></td>
+<td style="text-align: left;">Controls the <em>bias–variance tradeoff</em>: <br> Small <span class="math inline">\(\lambda\)</span> → wiggly, flexible fit (low bias, high variance). <br> Large <span class="math inline">\(\lambda\)</span> → smooth, stable fit (high bias, low variance).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Smoother Matrix</strong> <span class="math inline">\(\mathbf{S}_\lambda\)</span></td>
+<td style="text-align: left;">Maps observed values to fitted values: <span class="math display">\[\hat{\mathbf{y}} = \mathbf{S}_\lambda \mathbf{y}, \quad \mathbf{S}_\lambda = \mathbf{B}(\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'.\]</span> Captures how each observation influences its own fitted value.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Effective Degrees of Freedom (edf)</strong></td>
+<td style="text-align: left;">Measures model flexibility: <span class="math display">\[\text{edf} = \text{trace}(\mathbf{S}_\lambda).\]</span> Small <span class="math inline">\(\lambda\)</span> → large edf (many bends); large <span class="math inline">\(\lambda\)</span> → small edf (smoother curve).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Choosing</strong> <span class="math inline">\(\lambda\)</span>: GCV Criterion</td>
+<td style="text-align: left;">The optimal <span class="math inline">\(\lambda\)</span> is chosen by minimizing the <strong>Generalized Cross-Validation (GCV)</strong> statistic: <span class="math display">\[\text{GCV}(\lambda) = \frac{\frac{1}{n}\sum_i (y_i - \hat{y}_i)^2}{\left[1 - \frac{\text{trace}(\mathbf{S}_\lambda)}{n}\right]^2}.\]</span> Provides a data-driven balance between fit and smoothness.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Smoothing Spline (Limit Case)</strong></td>
+<td style="text-align: left;">When knots are placed at every unique <span class="math inline">\(x_i\)</span>, the penalized spline becomes a <strong>smoothing spline</strong>: <span class="math display">\[\min_g \sum_i (y_i - g(x_i))^2 + \lambda \int [g''(x)]^2 dx.\]</span> Produces a globally smooth curve that still adapts to local structure.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Interpretation</strong></td>
+<td style="text-align: left;">Penalized splines emphasize the <em>shape</em> of <span class="math inline">\(g(x)\)</span> rather than individual coefficients. The smoothing parameter <span class="math inline">\(\lambda\)</span> controls how smooth or wiggly the estimated function is.</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./Module_4B_Splines.html" class="pagination-link" aria-label="Module 4B Parametric Splines">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Module 4B Parametric Splines</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./Module_4_Splines_Cheat.html" class="pagination-link" aria-label="Module 4 Cheat Sheet">
+        <span class="nav-page-text">Module 4 Cheat Sheet</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

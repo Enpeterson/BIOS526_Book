@@ -1,0 +1,540 @@
+---
+title: "Post-Midterm Review: Building Blocks of Modern Regression"
+subtitle: "Modules 1–3: LMMs → GLM(M)s → Marginal Models"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    incremental: true
+    smaller: true
+execute: 
+  echo: true
+  warning: false
+---
+
+## Session Goals
+
+-   Diagnose and clarify conceptual misunderstandings from the midterm\
+-   Reconnect theory to model structure\
+-   Distinguish **hierarchical**, **generalized**, and **marginal** perspectives\
+-   Prepare for nonlinear extensions (splines, GAMs)
+
+::: callout-tip
+By the end of class, you should be able to:\
+1. Identify the mean, variance, and correlation structure of any model\
+2. Explain what parameter each model estimates (subject vs. population)\
+3. Interpret coefficients on the correct scale
+:::
+
+------------------------------------------------------------------------
+
+## Warm-Up Poll
+
+### Quick Concept Check
+
+1.  What changes when we move from LM → LMM?\
+2.  Does the link function act on $y$ or on $E[y|x]$?\
+3.  Interpret $\text{Var}(y_{ij}) = \sigma_u^2 + \sigma_\epsilon^2$.\
+4.  Why might GEE and GLMM yield different $\beta$'s?\
+5.  When does GLS outperform WLS?
+
+::: callout-note
+**Instructor Prompt:** Discuss reasoning, not just correctness.\
+Surface misconceptions before deep dives.
+:::
+
+------------------------------------------------------------------------
+
+## Module 1 --- Linear Mixed Models {.smaller}
+
+::: callout-important
+**Motivation**
+
+-   Longitudinal data
+-   Clustered data
+-   Normal Outcomes
+:::
+
+------------------------------------------------------------------------
+
+## Model
+
+\tiny
+
+::: fragment
+We model hierarchical/correlated data:\
+
+$$
+y_{ij} = \beta_0 + \beta_1 x_{ij} + \theta_i + \epsilon_{ij},
+\quad \theta_i\sim N(0,\tau^2),\ 
+\epsilon_{ij}\sim N(0,\sigma_\epsilon^2),\
+\theta_i \perp \epsilon_{ij}
+$$
+:::
+
+**Interpretation**
+
+::: fragment
+| Concept | Meaning |
+|:-----------------------------------|:-----------------------------------|
+| **Population-level effects** | $\beta_0, \beta_1$: overall (fixed) trend across all groups |
+| **Random effects** | $\theta_i$: group-level deviations (random across groups) |
+| **Overall trend** | $\beta_0 + \beta_1 x_{ij}$ |
+| **Conditional, group-specific trend** | $(\beta_0 + \theta_i) + \beta_1 x_{ij}$ |
+| **Total variability** | $\tau^2 + \sigma_\epsilon^2$ |
+| **Within-group variability** | $\sigma_\epsilon^2$ |
+:::
+
+------------------------------------------------------------------------
+
+## 
+
+**Key Ideas** - Two error sources →
+
+-   variability within clusters $\sigma^2$\
+-   variability between clusters $\tau^2$\
+-   shrinkage!
+
+Questions for you?
+
+-   What is the covariance between two different clusters?
+-   What is the covariance between two units/subjects within the same cluster?
+-   What is the overall variability of the outcome across the entire population?
+
+**Intra-class correlation:** the proportion of total variability explained by group membership.
+
+-   Correlation between two individuals in the same group: $$
+    \rho = \frac{\tau2}{\tau^2+\sigma_\epsilon^2}
+    $$
+
+------------------------------------------------------------------------
+
+## Shrinkage
+
+**Best Linear Unbiased Predictor**: Derived through partial pooling.
+
+-   What is the main concept behind pooling?
+
+-   $\hat{\theta}_i = B_i \cdot \bar{y}_i + (1-B_i) \cdot \hat{\mu}$
+
+-   The shrinkage factor is the **precision weight** $B_i$:
+
+::: fragment
+$$
+B_i = \frac{n_i}{n_i + \sigma^2/\tau^2}
+$$
+
+-   If $B_i$ = large, this means large precision, and higher weight on the data.
+-   If $B_i$ = small, this means smaller precision, and higher weight on the population mean.
+:::
+
+## 
+
+```{r}
+#| echo: true
+#| results: 'markup'  # ensures pretty formatting
+#| code-fold: true    # collapses the full output (optional)
+library(lme4)
+set.seed(1)
+group <- factor(rep(1:6, each = 5))
+x <- rnorm(30)
+u <- rnorm(6, 0, 1)[group]
+y <- 5 + 2*x + u + rnorm(30, 0, 1)
+m1 <- lmer(y ~ x + (1|group))
+summary(m1)$coefficients   # print only fixed effects
+VarCorr(m1)    
+```
+
+::: callout-tip
+Visualize shrinkage:\
+`coef(m1)$group` vs. group means from `lm(y ~ x + group)`
+:::
+
+```{r}
+#| echo: false
+#| results: 'markup'  # ensures pretty formatting
+#| code-fold: true    # collapses the full output (optional)
+library(lme4)
+
+set.seed(1)
+group <- factor(rep(1:6, each = 5))
+x <- rnorm(30)
+u <- rnorm(6, 0, 1)[group]
+y <- 5 + 2*x + u + rnorm(30, 0, 1)
+
+m1 <- lmer(y ~ x + (1|group))
+lm_fit <- lm(y ~ x + group)
+
+# Unpooled group means at x = 0, one per group (includes the reference)
+newdat <- data.frame(x = 0, group = levels(group))
+lm_means <- predict(lm_fit, newdata = newdat)
+
+# Partially pooled random-intercept estimates (same order as levels(group))
+re_means <- coef(m1)$group[,"(Intercept)"]
+
+# Sanity check: same length and aligned by group
+stopifnot(length(lm_means) == length(re_means))
+
+plot(lm_means, re_means,
+     xlab = "Unpooled group means (lm, at x=0)",
+     ylab = "Partially pooled intercepts (lmer)",
+     main = "Visualizing Shrinkage",
+     pch = 19)
+abline(0, 1, lty = 2)
+text(lm_means, re_means, labels = levels(group), pos = 3, cex = 0.8)
+ 
+```
+
+------------------------------------------------------------------------
+
+## Parameter Estimation
+
+::::: fragment
+-   How do we estimate the population-level parameters?
+
+-   **Best Linear Unbiased Estimator of the Coefficient** $$
+    \hat{\beta} = (X^T V^{-1} X)^{-1} X^{T} V^{-1}y,\ V \neq \sigma^2 I
+    $$
+
+-   **Maximum Likelihood Estimate** $\sigma^2$
+
+::: fragment
+$$
+\hat{\sigma}^2 =\frac{1}{n} \sum_{i=1}^n (y_i - \bar{y})^2
+$$
+:::
+
+-   **Restricted Maximum Likelihood Estimate** $\sigma^2$
+
+::: fragment
+$$
+\hat{\sigma}_{REML}^2 =\frac{1}{n-1} \sum_{i=1}^n (y_i - \bar{y})^2
+$$
+:::
+:::::
+
+------------------------------------------------------------------------
+
+## Module 2A--B --- Generalized Linear Models
+
+::: callout-important
+**Motivation**
+
+-   Longitudinal data
+-   Clustered data
+-   Non-Normal Count Outcomes
+:::
+
+------------------------------------------------------------------------
+
+## Model
+
+Unified framework:
+
+$$
+g(\mu_i) = X_i\beta, \qquad E(Y_i|X_i) = g^{-1}(X_i \beta), \qquad
+\text{Var}(Y_i|X_i) = V(g^{-1}(X_i \beta)) = \phi V(\mu_i)
+$$
+
+| Distribution | Link     | Variance     |
+|--------------|----------|--------------|
+| Normal       | identity | constant     |
+| Poisson      | log      | $\mu$        |
+| Binomial     | logit    | $\mu(1-\mu)$ |
+
+- What are the properties of the link function?
+
+------------------------------------------------------------------------
+
+
+```{r, echo=F}
+df <- data.frame(x = rnorm(100))
+df$y <- rpois(100, lambda = exp(0.5 + 0.3*df$x))
+df$N <- sample(x = seq(50, 100), size = 100, replace = TRUE)
+```
+
+```{r}
+#| echo: True
+#| results: 'markup'  # ensures pretty formatting
+#| code-fold: true    # collapses the full output (optional)
+# Poisson example
+m_poiss <- glm(y ~ x, family = poisson(link="log"), offset = log(df$N), data=df)
+summary(m_poiss)
+```
+
+
+```{r}
+#| echo: True
+#| results: 'markup'  # ensures pretty formatting
+#| code-fold: true    # collapses the full output (optional)
+# Binomial example
+mbinom <- glm(cbind(y, N-y) ~ x, family = binomial(link="logit"), data=df)
+summary(mbinom)
+```
+
+
+-----
+
+
+## Interpretation
+
+::: callout-note
+
+\smaller
+Interpret β₁: Both on original and transformed scales
+
+- Each one-unit increase in *x* multiplies $E[y|x]$ by $\exp(β_1)$ 
+
+- $\beta_1$ is interpreted as the change in _______-__________  per one unit change in *x*.
+
+- Define an odds ratio
+
+- Define an incidence rate ratio
+
+- How do you get the 95\% CIs for the OR?
+:::
+
+------------------------------------------------------------------------
+
+
+## Model Inference and Comparison {.smaller}
+
+**Context:** In GLMs, we assess predictors and compare models using three key tools:
+
+-  🔹 Wald Test: Tests **individual coefficients**:  
+  $$
+  z = \frac{\hat{\beta}_j}{\text{SE}(\hat{\beta}_j)} \quad \Rightarrow \quad p\text{-value from } N(0,1)
+  $$
+- Interpretation: is $\beta_j$ significantly different from 0?
+
+
+-  🔹 Likelihood Ratio Test (LRT): Compares **nested models**:  
+  $$
+  G^2 = -2(\ell_{\text{reduced}} - \ell_{\text{full}}) \sim \chi^2_{df}
+  $$
+- Tests whether removing a term significantly worsens model fit.
+
+
+-  🔹 Akaike Information Criterion (AIC): Compares **non-nested models** (general model selection):  $\text{AIC} = -2\ell + 2p$
+- Balances model **fit** ($\ell$ = log-likelihood) and **parsimony** ($p$ = number of parameters).
+- Lower AIC ⇒ better tradeoff between complexity and fit.
+
+-----
+
+**Summary Table**
+
+| Criterion | Purpose | Uses | Test Statistic | Lower/Smaller = Better? |
+|:--|:--|:--|:--|:--:|
+| **Wald Test** | Test individual $\beta_j$ | Non-nested, single term | $z = \hat\beta / SE$ | – |
+| **LRT** | Compare nested models | Nested | $G^2 = -2(\ell_0 - \ell_1)$ | ✔ |
+| **AIC** | Compare any models | Nested / non-nested | $-2\ell + 2p$ | ✔ |
+
+
+-----------------
+
+
+## Module 2C--D GLMMs
+
+Add random effects to handle within-cluster dependence: 
+$$
+g(E[y_{ij}|u_j]) = X_{ij}\beta + \theta_i,\quad \theta_i \sim N(0, \tau^2), \quad \text{NO } \epsilon!
+$$
+
+```{r}
+#| echo: True
+#| results: 'markup'  # ensures pretty formatting
+#| code-fold: true    # collapses the full output (optional)
+# Binary GLMM example
+set.seed(2)
+subject <- factor(rep(1:40, each = 5))
+x <- rnorm(200)
+u <- rnorm(40, 0, 0.75)[subject]
+eta <- -1 + 1.2*x + u
+y <- rbinom(200, 1, plogis(eta))
+m_glmm <- glmer(y ~ x + (1|subject), family=binomial)
+summary(m_glmm)
+```
+
+----------------- 
+
+## GLM vs. GLMM: Population-Average vs. Subject-Specific {.smaller}
+
+In a **GLM**, we model the *marginal* (population-average) relationship:
+
+::::: fragment
+
+$$
+E[y_{ij} \mid x_{ij}] = g^{-1}(\beta_0 + \beta_1 x_{ij})
+$$
+
+:::
+
+- The effect of $x$ (the slope $\beta_1$) reflects the **average association across all subjects**,  
+because random subject differences are **integrated out** of the model.
+
+
+
+In a **GLMM**, we model the *conditional* (group-specific) relationship:
+
+::::: fragment
+
+$$
+E[y_{ij} \mid x_{ij}, \theta_i] = g^{-1}(\beta_0 + \beta_1 x_{ij} + \theta_i)
+$$
+
+:::
+
+::: callout-tip
+Compare $\hat{\beta}_x$ from: 
+
+- glm(y ~ x) → Population-average (marginal)
+- glmer(y ~ x + (1|subject)) → Subject-specific (conditional)
+
+👉 Subject-specific (GLMM) effects are typically larger in magnitude,
+because they remove between-subject variation and focus on within-subject change.
+:::
+
+
+
+
+
+------------------------------------------------------------------------
+
+## Module 3 --- Marginal Models (WLS, GLS, GEE)
+
+
+::: callout-important
+**Motivation**
+
+-   Longitudinal data
+-   Clustered data
+-   Want population-level associations only. But also want to account for correlation structure
+:::
+
+------------------------------------------------------------------------
+
+### GEE Framework: Choosing a covariance structure
+
+Progression of correlation handling:
+
+| Method | Handles               | Target          |
+|--------|-----------------------|-----------------|
+| WLS    | heteroskedasticity: $V$ is diagonal | population mean |
+| GLS    | known correlation   $V$ is any known positive def matrix  | population mean |
+| GEE    | estimated correlation | population mean |
+
+Correlation structure examples:  
+- $V_i = \sigma^2 R_i(\alpha)$
+
+    - Independent
+    - Exchangeable
+    - AR(1)
+    - Unstructured
+
+
+-----
+
+## GLS Estimators
+
+- Generalized Least Squares Estimator is the Best Linear Unbiased Estimator whe $V$ is correctly specified
+
+::::: fragment
+
+$$
+\hat{\beta}_{GLS} = (X^T V^{-1}X)^{-1} X^T V^{-1}y
+$$
+
+$$
+cov(\hat{\beta}_{GLS}) = (X^T V^{-1}X)^{-1} 
+$$
+
+:::
+
+---
+
+## What if our assumption about $V$ is wrong?
+
+
+- If $V$ is **mis-specified**, $\hat{\beta}_{GLS}$ is still **consistent**,  
+  but its **standard errors are wrong**.
+
+- **GEE (Generalized Estimating Equations)** fixes this by using a
+  **“working correlation”** and a **robust (sandwich) variance estimator.**
+
+:::: {.fragment}
+$$
+\hat{V}_{robust} = (X^T V^{-1} X)^{-1} \left( \sum_i X_i^T V^{-1} \hat{\Omega}_iV^{-1} X_i \right) (X^T V^{-1} X)^{-1}
+$$
+where $\hat{\Omega}_i = \epsilon_i \epsilon_i^\top$ (cluster residual covariance)
+
+
+
+
+
+::::
+
+
+--------
+
+## GEE Estimating Equations {.smaller}
+
+The goal of GEE is to estimate **population-average effects** when observations within a cluster (e.g., repeated measures on a person) are **correlated**.
+
+We solve for $\hat{\beta}$ that makes the following **weighted residuals sum to zero**:
+
+
+$$
+U(\beta) = \sum_{i=1}^m D_i^\top V_i^{-1} (y_i - \mu_i) = 0
+$$
+
+
+| Symbol | Meaning |
+|:--|:--|
+| $i$ | Cluster or subject index ($i = 1, \dots, m$) |
+| $y_i$ | Vector of responses for cluster $i$ |
+| $\mu_i = E(y_i)$ | Mean vector under the model |
+| $D_i = \frac{\partial \mu_i}{\partial \beta}$ | Design (derivative) matrix |
+| $V_i = A_i^{1/2} R_i(\alpha) A_i^{1/2}$ | Working covariance matrix of $y_i$ |
+| $A_i$ | Diagonal matrix of marginal variances |
+| $R_i(\alpha)$ | Working correlation (independent, exchangeable, AR(1), etc.) |
+
+---
+
+## Interpretation
+
+- $U(\beta)$ generalizes the **score equation** from GLMs to correlated data.  
+- Even if the **working correlation** $R_i(\alpha)$ is wrong:
+- $\hat{\beta}$ is still **consistent** (mean model correct ⇒ unbiased population effect).  
+- Only the **standard errors** are affected.  
+  → Fix this with the **robust (sandwich) variance**.
+
+
+
+------------
+
+```{r}
+library(geepack)
+id <- factor(rep(1:30, each = 4))
+time <- rep(1:4, 30)
+x <- rnorm(120)
+eta <- 0.5 + 0.4*x
+y <- rpois(120, exp(eta))
+gee_ind <- geeglm(y ~ x, id=id, family=poisson, corstr="independence")
+gee_exc <- geeglm(y ~ x, id=id, family=poisson, corstr="exchangeable")
+summary(gee_ind)$coef
+summary(gee_exc)$coef
+```
+
+::: callout-note
+β estimates are similar, but SEs differ by working correlation.\
+GEE targets the **population-average** effect.
+:::
+
+------------------------------------------------------------------------
+
+## Midterm Deconstruction & Takeaways
+
+
+**Questions on the Midterm**
+
+------------------------------------------------------------------------

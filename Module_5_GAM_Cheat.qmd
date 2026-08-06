@@ -1,0 +1,385 @@
+
+# Module 5 Cheat Sheet {.unnumbered}
+
+```{r, hide =T, echo=F, message=F}
+library(dplyr)
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+```
+
+## `r colorize("Overview", "purple")`
+
+- Generalized Additive Models (GAMs) extend GLMs by allowing **nonlinear smooth effects** of predictors.
+- Core idea (Module 5A): model the **mean** via a link as an **additive sum of smooth functions**:
+  $$
+  g(\mathbb{E}[Y_i]) = \beta_0 + \sum_{j=1}^p s_j(X_{ij}).
+  $$
+- Smooths $s_j(\cdot)$ are represented using **basis functions** (splines) plus **penalties** that control wiggliness.
+- Module 5A focuses on:
+  - additive smooths (one or many $s_j$),
+  - penalized estimation and uncertainty bands,
+  - a time-series GAM for NYC mortality and PM$_{2.5}$.
+- Module 5B extends GAMs to:
+  - **smooth interactions** between continuous variables using **tensor-product smooths** $s_{12}(x,z)$,
+  - **varying-coefficient smooths** where $s(x)$ varies across groups using `by=`.
+
+------------------------------------------------------------------------
+
+## `r colorize("1. Generalized Additive Models (Module 5A)", "purple")`
+
+**Overview**
+
+- GAMs are GLMs where linear terms are replaced by **smooth functions**:
+  $$
+  g(\mathbb{E}[Y_i]) = \beta_0 + \sum_{j=1}^p s_j(X_{ij}).
+  $$
+- Each $s_j(\cdot)$ captures a potentially **nonlinear** effect of predictor $X_j$ on the link scale.
+- Implementation in R: `mgcv::gam()` with smooth terms like `s(age)`, `s(pm25_lag1)`, `s(doy, bs = "cc")`, etc.
+
+**Basis representation and roughness penalties**
+
+- A single smooth $s(x)$ can be written as a spline basis expansion:
+  $$
+  s(x) = \sum_{m=1}^{k} \beta_m b_m(x),
+  $$
+  where $b_m(x)$ are spline basis functions and $\beta_m$ are coefficients.
+- To avoid overfitting, curvature is penalized; for example,
+  $$
+  \lambda \int [s''(x)]^2 \, dx,
+  $$
+  where $\lambda \ge 0$ is a smoothing parameter (larger $\lambda$ = smoother $s$).
+
+- With multiple smooths $s_1(x)$ and $s_2(z)$:
+  $$
+  s_1(x) = \sum_{m=1}^{k_1} \beta_{1m} b_{1m}(x), \quad
+  s_2(z) = \sum_{m=1}^{k_2} \beta_{2m} b_{2m}(z),
+  $$
+  with separate penalties
+  $$
+  \lambda_1 \int [s_1''(x)]^2 dx + \lambda_2 \int [s_2''(z)]^2 dz.
+  $$
+
+**Penalized least squares / penalized likelihood**
+
+- Gaussian case (least squares):
+  $$
+  \min_{\boldsymbol{\beta}}\Big\{
+    \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2
+    + \lambda_1 \boldsymbol{\beta}_1^\top \mathbf{K}_1 \boldsymbol{\beta}_1
+    + \lambda_2 \boldsymbol{\beta}_2^\top \mathbf{K}_2 \boldsymbol{\beta}_2
+  \Big\},
+  $$
+  where $\mathbf{K}_j$ encodes curvature of $s_j$.
+- General GAM (any exponential-family link):
+  $$
+  g(\mathbb{E}[Y_i]) = \beta_0 + s_1(x_i) + s_2(z_i),
+  $$
+  estimated by minimizing a **penalized log-likelihood**:
+  $$
+  \min_{\boldsymbol{\beta}}\Big\{
+    -\ell(\boldsymbol{\beta}\mid\mathbf{y})
+    + \lambda_1 \boldsymbol{\beta}_1^\top \mathbf{K}_1 \boldsymbol{\beta}_1
+    + \lambda_2 \boldsymbol{\beta}_2^\top \mathbf{K}_2 \boldsymbol{\beta}_2
+  \Big\}.
+  $$
+- Smoothing parameters $\lambda_j$ are chosen from the data (e.g., REML, GCV).
+
+**Example 1: PTB logistic GAM (nonlinear age effect)**
+
+- Data: GA birth cohort; outcome = preterm birth (`ptb`), predictors = `age`, `male`, `tobacco`.
+- Model:
+  $$
+  \begin{aligned}
+  \text{ptb}_i &\sim \text{Bernoulli}(p_i),\\
+  \text{logit}(p_i) &= \beta_0 + \beta_1 \,\text{male}_i
+  + \beta_2 \,\text{tobacco}_i + s(\text{age}_i).
+  \end{aligned}
+  $$
+- `s(age)` uses a spline basis (by default cubic regression spline with $k=10$).
+- Effective degrees of freedom (edf) for `s(age)` summarize the **complexity** of the age effect:
+  - edf $\approx 1$ → nearly linear,
+  - edf $> 1$ → nonlinear shape.
+- Fitted smooth: U-shaped relationship in log-odds of preterm birth: highest risk at very young ages, lowest around age $\approx 29$, then increasing again at older ages.
+
+------------------------------------------------------------------------
+
+## `r colorize("2. Multiple Smoothers & Time-Series GAM (Module 5A)", "purple")`
+
+**NYC mortality and air pollution example**
+
+- Data (NYC, 2001–2005):
+  - Outcome: daily non-accidental deaths, age $\ge 65$ (`cr65plus`).
+  - Main exposure: PM$_{2.5}$ (daily, plus lagged versions).
+  - Confounders: temperature, dew point temperature, long-term and seasonal time trends, day of week.
+
+**Time-series GAM model**
+
+- Let:
+  - $y_t$ = daily count of deaths,
+  - $x_{t-1}$ = lag-1 PM$_{2.5}$ (previous-day exposure),
+  - $\text{DOW}_t$ = day of week,
+  - $\text{DOY}_t$ = day of year,
+  - $t$ = time index,
+  - $T_t$, $Dp_t$ = same-day Temp and dew point,
+  - $\text{rmTemp}_t$, $\text{rmDp}_t$ = running-mean meteorology (lags).
+- Example model (quasi-Poisson, log link):
+  $$
+  \begin{aligned}
+  \log \mathbb{E}[y_t]
+  &= \beta_0 + s(\text{pm25\_lag1}_t)
+   + \boldsymbol{\alpha}^\top \mathbf{1}\{\text{DOW}_t\} \\
+  &\quad + s(\text{DOY}_t)
+   + s(t)
+   + s(T_t) + s(Dp_t)
+   + s(\text{rmTemp}_t) + s(\text{rmDp}_t).
+  \end{aligned}
+  $$
+- Each smooth $s(\cdot)$ is represented by spline bases with its own penalty.
+
+**Interpretation highlights**
+
+- `s(pm25_lag1)`:
+  - Statistically significant smooth → higher lagged PM$_{2.5}$ associated with increased daily mortality among older adults.
+- `s(doy)` and `s(date2)`:
+  - Highly significant → strong **seasonal** and **long-term** patterns in mortality.
+- `s(Temp)`, `s(DpTemp)`, `s(rmTemp)`, `s(rmDpTemp)`:
+  - Capture complex, nonlinear meteorological effects (both same-day and lagged).
+
+**Model performance (from Module 5A)**
+
+- Deviance explained $\approx 49.7\%$; adjusted $R^2 \approx 0.48$.
+- Smoothers with higher edf capture more complex shapes, but penalization keeps curves from overfitting.
+
+**Model checking: `gam.check()`**
+
+- `gam.check(fit)` evaluates:
+  - basis dimension $k$ adequacy for each smooth,
+  - residual diagnostics and stability.
+- Key output:
+  - $k'$: nominal basis size used,
+  - edf: effective degrees of freedom,
+  - $k$-index and p-value for each smooth.
+- Interpretation:
+  - $k$-index near 1 and large p-value → chosen $k$ is adequate.
+  - Low $k$-index with small p-value → basis may be too small; increase $k$ to allow more flexibility.
+
+------------------------------------------------------------------------
+
+## `r colorize("3. Uncertainty Bands for Smooths (Module 5A)", "purple")`
+
+**Penalized estimation and approximate distribution**
+
+- Let a smooth $s_j(x)$ have basis vector $\mathbf{b}(x)$ and coefficients $\boldsymbol{\beta}_j$:
+  $$
+  s_j(x) = \mathbf{b}(x)^\top \boldsymbol{\beta}_j.
+  $$
+- GAM estimation maximizes:
+  $$
+  \ell(\boldsymbol{\beta};\mathbf{y})
+  - \tfrac{1}{2}\sum_j \lambda_j \boldsymbol{\beta}_j^\top \mathbf{K}_j \boldsymbol{\beta}_j,
+  $$
+  where $\mathbf{K}_j$ is a penalty matrix and $\lambda_j$ controls smoothness.
+- Near the optimum,
+  $$
+  \hat{\boldsymbol{\beta}} \approx
+  N\!\Big(\boldsymbol{\beta}_{\text{true}},
+    \mathbf{V}_\beta\Big),
+  \quad
+  \mathbf{V}_\beta \approx
+  \big(\hat{\mathbf{I}} + \sum_j \lambda_j \mathbf{K}_j\big)^{-1},
+  $$
+  with $\hat{\mathbf{I}}$ the observed Fisher information.
+
+**Standard errors and bands for $s_j(x)$**
+
+- For a given $x$:
+  $$
+  \hat{s}_j(x) = \mathbf{b}(x)^\top \hat{\boldsymbol{\beta}}_j, \quad
+  \mathrm{SE}\{\hat{s}_j(x)\} =
+  \sqrt{\mathbf{b}(x)^\top \mathbf{V}_{\beta,j} \mathbf{b}(x)}.
+  $$
+- Pointwise 95% interval on the **linear predictor scale**:
+  $$
+  \hat{s}_j(x) \pm 1.96 \times \mathrm{SE}\{\hat{s}_j(x)\}.
+  $$
+
+**Response scale interpretation**
+
+- For non-identity links, intervals are first computed on the link scale, then transformed:
+  - Poisson/log: $\hat{\mu}(x) = \exp\{\hat{\eta}(x)\}$,
+  - Binomial/logit: $\hat{p}(x) = \operatorname{logit}^{-1}\{\hat{\eta}(x)\}$.
+- In `mgcv` plots, shaded bands represent **pointwise confidence intervals** for $s_j(x)$ on the link scale:
+  - Narrow where data are dense,
+  - Wider where data are sparse.
+
+------------------------------------------------------------------------
+
+## `r colorize("4. Tensor-Product Smooths for Interactions (Module 5B)", "purple")`
+
+**Motivation**
+
+- Additive GAMs from Module 5A allow separate smooths $s_1(x)$ and $s_2(z)$, but **no smooth interaction**.
+- In many applications, the effect of one continuous predictor changes smoothly across levels of another:
+  - e.g., joint effect of temperature and PM$_{2.5}$ on mortality.
+- We want a **bivariate surface** $s_{12}(x,z)$, not a smooth of the product $xz$.
+
+**Model form with interaction**
+
+- For two continuous predictors $x$ and $z$:
+  $$
+  g(\mathbb{E}[Y]) = \beta_0 + s_1(x) + s_2(z) + s_{12}(x,z),
+  $$
+  where:
+  - $s_1(x)$ = smooth main effect of $x$,
+  - $s_2(z)$ = smooth main effect of $z$,
+  - $s_{12}(x,z)$ = **smooth interaction** (bivariate surface).
+
+**Basis via tensor products**
+
+- Let:
+  - $\mathbf{b}_x(x) \in \mathbb{R}^Q$ = spline basis for $x$,
+  - $\mathbf{b}_z(z) \in \mathbb{R}^P$ = spline basis for $z$.
+- Tensor-product basis:
+  $$
+  \mathbf{b}_{xz}(x,z)
+  = \mathbf{b}_x(x) \otimes \mathbf{b}_z(z),
+  $$
+  where $\otimes$ is the Kronecker product.
+- Bivariate smooth:
+  $$
+  s_{12}(x,z) = \mathbf{b}_{xz}(x,z)^\top \boldsymbol{\beta},
+  $$
+  with $Q \times P$ basis functions and coefficients before penalization.
+
+**Anisotropic penalties**
+
+- 1D penalty matrices:
+  - $\mathbf{K}_x$ controls curvature in $x$-direction,
+  - $\mathbf{K}_z$ controls curvature in $z$-direction.
+- Tensor-product penalty:
+  $$
+  \mathcal{P}(\boldsymbol{\beta}) =
+  \lambda_x \boldsymbol{\beta}^\top (\mathbf{K}_x \otimes \mathbf{I}_P)\boldsymbol{\beta}
+  + \lambda_z \boldsymbol{\beta}^\top (\mathbf{I}_Q \otimes \mathbf{K}_z)\boldsymbol{\beta},
+  $$
+  where:
+  - $\lambda_x$ controls smoothing horizontally (vary $x$, hold $z$),
+  - $\lambda_z$ controls smoothing vertically (vary $z$, hold $x$).
+
+**Example: NYC mortality with Temp × PM$_{2.5}$ interaction**
+
+- Model (Poisson/log link):
+  $$
+  \log \mathbb{E}[y_t]
+  = \beta_0
+  + s_{12}(\text{Temp}_t, \text{PM}_{t-1})
+  + \boldsymbol{\alpha}^\top \mathbf{1}\{\text{DOW}_t\}
+  + s(\text{DOY}_t)
+  + s(t),
+  $$
+  where $s_{12}(\text{Temp},\text{PM})$ is implemented as `te(Temp, pm25.lag1)`.
+- Interpretation from Module 5B:
+  - Tensor-product smooth for Temp × PM$_{2.5}$ is highly significant.
+  - Certain **combinations** of higher temperature and PM$_{2.5}$ are associated with elevated mortality risk.
+- Basis dimension:
+  - Marginal bases for Temp and PM$_{2.5}$ often default to small $k$ (e.g., $k_x = k_z = 5$),
+  - Tensor-product grid has up to $Q \times P = 5 \times 5 = 25$ basis functions,
+  - Penalization shrinks many directions toward zero; effective degrees of freedom (edf $\approx 5.1$ in the example) reflect the **complexity of the fitted surface**.
+- Note: Unlike univariate smooths, `te(x,z)` does **not** automatically use $k=10$ per margin; defaults are smaller unless specified via `k = c(k_x, k_z)`.
+
+------------------------------------------------------------------------
+
+## `r colorize("5. Varying-Coefficient Smooths (Effect Modification, Module 5B)", "purple")`
+
+**Motivation**
+
+- Sometimes the effect of a continuous predictor $x$ differs by **categories** of a grouping variable $G$ (e.g., day of week, sex, site).
+- We want $s(x)$ to vary by group, but we are **not** modeling a full 2D continuous surface in $(x,G)$.
+- Example from Module 5B: PM$_{2.5}$–mortality relationship varying by **day of week**.
+
+**Model form**
+
+- Let $G$ be a categorical variable with a reference group and other levels.
+- Varying-coefficient GAM:
+  $$
+  g(\mathbb{E}[Y]) =
+  \beta_0 + \beta_G G
+  + s(x) + s(x,\text{by}=G),
+  $$
+  where:
+  - $s(x)$ = baseline smooth (reference group),
+  - $s(x,\text{by}=G)$ = group-specific **difference smooths**,
+  - $\beta_G G$ = parametric main effect of $G$ (needed for identifiability).
+
+**Basis representation**
+
+- Suppose $G$ has $C$ categories and $b_m(x)$, $m=1,\dots,k$ are the basis functions for $s(x)$. Then:
+  $$
+  s(x) + s(x,\text{by}=G)
+  = \sum_{m=1}^k \beta_m b_m(x)
+  + \sum_{c=1}^{C-1} \sum_{m=1}^k \gamma_{mc} b_m(x) I(G = c),
+  $$
+  where:
+  - first term = baseline smooth for the reference group,
+  - second term = $(C-1)$ deviation smooths, one per non-reference group.
+
+**Penalties**
+
+- Each smooth (baseline and deviations) gets its own penalty:
+  $$
+  \lambda_{\text{base}} \boldsymbol{\beta}^\top K \boldsymbol{\beta}
+  + \sum_{c=1}^{C-1} \lambda_c \boldsymbol{\gamma}_c^\top K \boldsymbol{\gamma}_c.
+  $$
+- Interpretation:
+  - $\boldsymbol{\gamma}_c$ = coefficients for group-$c$ deviation curve,
+  - $K$ = shared curvature penalty matrix,
+  - large $\lambda_c$ → deviation smooth shrinks toward 0 (group curve similar to baseline),
+  - small $\lambda_c$ → more flexible, group-specific shape.
+
+**Example: PM$_{2.5}$ effect by day of week (NYC)**
+
+- Model (Poisson/log link):
+  $$
+  \log \mathbb{E}[y_t]
+  = \beta_0
+  + s(\text{PM}_{t-1})
+  + s(\text{PM}_{t-1},\text{by}=\text{DOW}_t)
+  + s(\text{DOY}_t)
+  + s(t),
+  $$
+  implemented as:
+  ```r
+  alldeaths ~
+    s(pm25.lag1) +
+    s(pm25.lag1, by = fdow) +
+    s(doy, bs = "cc", k = 30) +
+    s(date2, k = 100)
+  ```
+- Interpretation from Module 5B:
+  - Baseline smooth `s(pm25.lag1)` has edf ≈ 1 → effectively linear for the reference day (Sunday).
+  - Deviation smooths `s(pm25.lag1, by = fdowX)` have very low edf (1–2) and are **not statistically significant**.
+  - No strong evidence that the PM$_{2.5}$–mortality relationship is nonlinear or varies by day of week.
+  - Seasonal (`s(doy)`) and long-term (`s(date2)`) trends remain dominant smooth components.
+
+------------------------------------------------------------------------
+
+## `r colorize("Summary", "purple")`
+
+| **Topic** | **Summary** |
+|-----------|-------------|
+| **What is the Model?** | A **Generalized Additive Model (GAM)** extends GLMs by allowing each predictor to have its own smooth, potentially nonlinear effect: $$g(\mathbb{E}[Y]) = \beta_0 + \sum_{j=1}^p s_j(X_j).$$ Smooths $s_j(\cdot)$ are estimated from data using spline bases and curvature penalties. |
+| **Multiple smoothers (NYC example)** | In time-series GAMs, several smooths are combined additively: $$\log \mathbb{E}[y_t] = \beta_0 + s(\text{PM}) + s(\text{DOY}) + s(t) + s(\text{Temp}) + \dots$$ allowing flexible control for confounding (weather, seasonality, trend) while estimating the exposure-response curve. |
+| **Penalization** | Smooths are controlled by penalties of the form $\lambda_j \boldsymbol{\beta}_j^\top K_j \boldsymbol{\beta}_j$, where $\lambda_j$ is a smoothing parameter and $K_j$ encodes curvature. Estimation proceeds by maximizing a penalized log-likelihood. |
+| **Uncertainty bands** | GAM smooths have an approximate multivariate normal distribution for coefficients. Standard errors for $s_j(x)$ are obtained via $\mathrm{Var}\{\hat{s}_j(x)\} = \mathbf{b}(x)^\top \mathbf{V}_{\beta,j} \mathbf{b}(x)$, giving pointwise intervals $\hat{s}_j(x) \pm 1.96\,\mathrm{SE}\{\hat{s}_j(x)\}$. Shaded bands in `mgcv` plots are these pointwise intervals on the link scale. |
+| **Tensor-product smooths** | Smooth interactions between two continuous predictors are modeled by a tensor-product smooth $s_{12}(x,z)$ with basis $\mathbf{b}_{xz}(x,z) = \mathbf{b}_x(x)\otimes\mathbf{b}_z(z)$. The penalty $$\mathcal{P}(\boldsymbol{\beta}) = \lambda_x \boldsymbol{\beta}^\top (\mathbf{K}_x \otimes \mathbf{I}_P)\boldsymbol{\beta} + \lambda_z \boldsymbol{\beta}^\top (\mathbf{I}_Q \otimes \mathbf{K}_z)\boldsymbol{\beta}$$ allows **anisotropic smoothing** along $x$ and $z$ directions. |
+| **Varying-coefficient smooths** | When a smooth effect of $x$ varies across groups $G$, GAMs use a baseline smooth $s(x)$ plus deviation smooths $s(x,\text{by}=G)$: $$s(x) + s(x,\text{by}=G) = \sum_m \beta_m b_m(x) + \sum_{c=1}^{C-1}\sum_m \gamma_{mc} b_m(x) I(G=c).$$ Each deviation smooth has its own penalty, shrinking group curves toward the baseline if $\lambda_c$ is large. |
+| **Estimation & diagnostics** | Smoothing parameters are selected by **REML** or **GCV**. Use `gam.check()` to assess basis dimension $k$ and smooth adequacy (via $k$-index and p-values). EDF summarize smooth complexity; values near 1 indicate near-linearity. |
+| **Interpretation** | For univariate $s_j(x)$, interpret the **shape** of the smooth and its band on the link scale (e.g., log-odds, log-rate). For tensor-product smooths $s_{12}(x,z)$, use 3D surfaces or heatmaps. For varying-coefficient smooths, compare baseline and group-specific curves. |
+| **Key takeaway** | GAMs provide a **flexible, interpretable, and data-driven** framework: they extend GLMs with nonlinear smooths, allow complex time-series adjustments, and handle smooth interactions and effect modification through tensor-product and varying-coefficient smooths, as illustrated by the PTB and NYC mortality examples. |
+

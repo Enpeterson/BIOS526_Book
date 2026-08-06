@@ -1,0 +1,348 @@
+# Module 1B Linear Mixed Models {.unnumbered}
+
+```{r, hide =T, echo=F, message=F}
+library(dplyr)
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+library(dplyr)
+```
+
+## Partial Pooling (BLUP): Borrowing Strength Across Subjects
+
+In random--intercept models, each subject's intercept $\theta_i$ is not estimated in isolation. Instead, it is [**partially pooled**]{.underline} toward the overall mean: subjects with few observations (or noisier measurements) get **more shrinkage**, while subjects with lots of precise data get **less**. The resulting predictor is the **Best Linear Unbiased Predictor (BLUP)**---a weighted average of the subject's sample mean and the population mean, with weights determined by the **within-subject variance** $\sigma^2$, the **between-subject variance** $\tau^2$, and the subject's sample size $n_i$. This "borrowing strength" across subjects stabilizes subject-specific estimates and improves out-of-sample prediction.
+
+#### The Joint Density
+
+-   To simplify the derivation first consider a random effects model *without* fixed effects:
+
+$$
+y_{ij} = \theta_i + \epsilon_{ij}, \quad \theta_i \overset{iid}{\sim} N(0, \tau^2), \quad \epsilon_{ij} \overset{iid}{\sim} N(0, \sigma^2)
+$$ - To derive the BLUP of $\theta_i$, we start with the joint density of the data *and* random effects given by:
+
+$$
+f(y_{ij}, \theta_i) = f(y_{ij} \mid \theta_i) \, g(\theta_i),
+$$
+
+The conditional density of $y_{ij}$ given $\theta_i$ is:
+
+$$
+y_{ij} \mid \theta_i \sim N(\theta_i, \sigma^2),
+$$
+
+so
+
+$$
+f(y_{ij} \mid \theta_i) = \frac{1}{\sqrt{2 \pi \sigma^2}} 
+\exp \left( -\frac{(y_{ij} - \theta_i)^2}{2 \sigma^2} \right).
+$$
+
+The density of $\theta_i$ is:
+
+$$
+g(\theta_i) = \frac{1}{\sqrt{2 \pi \tau^2}}
+\exp \left( - \frac{\theta_i^2}{2 \tau^2} \right).
+$$
+
+Putting these together, the joint density of the data and random effects is given by:
+
+$$
+\prod_{ij} f(y_{ij}, \theta_i) = \prod_{i,j} f(y_{ij}|\theta_i) \cdot \prod_i g(\theta_i)
+$$ Going through the derivation:
+
+$$
+f(\{y_{ij}\}, \{\theta_i\}) 
+= \prod_{i=1}^m \left[ \left( \prod_{j=1}^{n_i} 
+\frac{1}{\sqrt{2 \pi \sigma^2}} 
+\exp \left( -\frac{(y_{ij} - \theta_i)^2}{2 \sigma^2} \right) \right) 
+\frac{1}{\sqrt{2 \pi \tau^2}} 
+\exp \left( - \frac{\theta_i^2}{2 \tau^2} \right) \right].
+$$
+
+### Best Linear Unbiased Prediction (BLUP) of $\theta_i$
+
+We aim to find the **predictor** $\hat{\theta}_i$ that is linear in the data, unbiased for $\theta_i$, and minimizes mean squared error (the BLUP).
+
+Taking logs (and dropping constants) gives the log-likelihood: $$
+\ell(\theta_i) 
+= -\frac{1}{2\sigma^2} \sum_{j=1}^{n_i} (y_{ij} - \theta_i)^2 
+- \frac{\theta_i^2}{2 \tau^2}.
+$$
+
+**Step 1:** Expand the Quadratic Term Expand the sum of squares: $$
+\sum_{j=1}^{n_i} (y_{ij} - \theta_i)^2
+= \sum_{j=1}^{n_i} y_{ij}^2 - 2 \theta_i \sum_{j=1}^{n_i} y_{ij} + n_i \theta_i^2.
+$$
+
+So:
+
+$$
+\ell(\theta_i) 
+= -\frac{1}{2\sigma^2} 
+\left( \sum_{j=1}^{n_i} y_{ij}^2 - 2 \theta_i \sum_{j=1}^{n_i} y_{ij} + n_i \theta_i^2 \right)
+- \frac{\theta_i^2}{2 \tau^2}.
+$$
+
+**Step 2:** Differentiate with Respect to $\theta_i$ The derivative is:
+
+$$
+\frac{\partial \ell}{\partial \theta_i}
+= \frac{\sum_{j=1}^{n_i} y_{ij} - n_i \theta_i}{\sigma^2} - \frac{\theta_i}{\tau^2}.
+$$
+
+**Step 3:** Solve for $\hat{\theta}_i$ Set the derivative to zero:
+
+$$
+\frac{\sum_{j=1}^{n_i} y_{ij} - n_i \hat{\theta}_i}{\sigma^2} - \frac{\hat{\theta}_i}{\tau^2} = 0.
+$$
+
+Multiply by $\sigma^2$:
+
+$$
+\sum_{j=1}^{n_i} y_{ij} - n_i \hat{\theta}_i - \frac{\sigma^2}{\tau^2} \hat{\theta}_i = 0.
+$$
+
+Rearrange:
+
+$$
+\sum_{j=1}^{n_i} y_{ij} = \hat{\theta}_i \left( n_i + \frac{\sigma^2}{\tau^2} \right).
+$$
+
+::: {.callout-note style="color: blue" appearance="minimal" icon="false"}
+Thus the **Best Linear Unbiased Predictor** of $\theta_i$ is given by:
+
+$$
+\hat{\theta}_i = \frac{\sum_{j=1}^{n_i} y_{ij}}{n_i + \sigma^2 / \tau^2} = \frac{n_i}{n_i + \sigma^2 / \tau^2} \bar{y}_i
+$$
+
+where $\bar{y}_i = \frac{1}{n_i} \sum_{j=1}^{n_i} y_{ij}$.
+
+We can express the BLUP as:
+
+$$
+\hat{\theta}_i = B_i \, \bar{y}_i,
+$$
+
+where the **shrinkage factor** is:
+
+$$
+B_i = \frac{n_i}{n_i + \sigma^2/\tau^2}.
+$$
+
+This shrinkage factor $B_i$ is the **precision-weight** placed on the subject's mean:it forms a **weighted average** of the subject mean and the population mean of $\theta_i$ (which is 0 here),
+
+$$
+\hat{\theta}_i = B_i\,\bar{y}_i + (1-B_i)\cdot 0.
+$$
+:::
+
+**Note that:**
+
+-   When $\tau^2 \to 0$ (no between-group variation),\
+    $B_i \to 0$ and all random intercepts are shrunk to 0 (the global mean).
+
+-   When $\tau^2 \to \infty$ (very large between-group variation),\
+    $B_i \to 1$ and there is no shrinkage: $\hat{\theta}_i = \bar{y}_i$.
+
+------------------------------------------------------------------------
+
+## Hierarchical Formulation
+
+**Hierarchical formulation:** A modeling approach where parameters are allowed to vary by group, but those group parameters are tied together through a shared distribution, so estimates reflect both the group's own data and the overall population.
+
+The BLUP shows shrinkage algebraically, but the **hierarchical model** explains why it happes: group effects are modeled as draws from a population, so each estimate combines (1) group data with information (2) shared across all groups. The amount that each component contributes depends on both the variance components and the number of observations within a group.
+
+In a random intercept model, we assume group-specific effects $\theta_i$ vary around a common mean $\mu$:
+
+$$
+  y_{ij} = \mu + \theta_i + \epsilon_{ij}, 
+  \quad \theta_i \sim N(0, \tau^2), 
+  \quad \epsilon_{ij} \sim N(0, \sigma^2),
+$$
+
+where:
+
+-   $i = 1, \ldots, m$ indexes groups,
+-   $j = 1, \ldots, n_i$ indexes observations within group $i$,
+-   $\tau^2$ is the between-group variance,
+-   $\sigma^2$ is the within-group variance.
+
+Equivalently, we can reparametrize this as a **two-level hierarchical model**:
+
+-   **Level 1 (within-group model):** $y_{ij} \mid \theta_i \sim N( \theta_i, \sigma^2)$.
+-   **Level 2 (random effect model):** $\theta_i \sim N(\mu, \tau^2)$.
+
+### Borrowing of Information
+
+The estimated random intercept $\hat{\theta}_i$ can be expressed as a [**weighted combination**]{.underline} of the overall mean $\mu$ and the group-specific mean $\bar{y}_i$:
+
+$$
+\begin{align*}
+\hat{\theta}_i & 
+= \frac{(1/\tau^2) \mu + (n_i / \sigma^2) \bar{y}_i}{1/\tau^2 + n_i / \sigma^2},\\
+B_i & = \frac{n_i/\sigma^2}{1/\tau^2 + n_i/\sigma^2}\\
+\hat{\theta}_i & = (1-B_i) \mu + B_i \bar{y}_i.
+\end{align*}
+$$
+
+This shows that:
+
+-   Groups with **small** $n_i$ (few observations) are pulled more strongly toward the overall mean $\mu$,
+-   Groups with **large** $n_i$ rely more on their own mean $\bar{y}_i$.
+-   When $n_i$ is small, $B_i$ is small and there is **more shrinkage**, while large $n_i$ makes $B_i$ close to 1 (less shrinkage).
+
+We can also express $\hat{\theta}_i$ in terms of the **intraclass correlation**: $$
+\rho = \frac{\tau^2}{\tau^2 + \sigma^2},
+$$ leading to:
+
+$$
+\hat{\theta}_i 
+= \frac{\rho^{-1} \mu + n_i (1-\rho)^{-1} \bar{y}_i}{\rho^{-1} + n_i (1-\rho)^{-1}}.
+$$
+
+**Note that:**
+
+-   As $\tau^2 \to 0$, all $\hat{\theta}_i \to \mu$ (complete shrinkage toward the common mean).
+-   As $\tau^2 \to \infty$, $\hat{\theta}_i \to \bar{y}_i$ (no shrinkage, group means are used as-is).
+-   [The amount of shrinkage depends jointly on $\tau^2$, $\sigma^2$, and $n_i$.]{.underline}
+
+------------------------------------------------------------------------
+
+## Parameter Estimation
+
+We've specified the random-intercept model, its variance components $(\tau^2,\sigma^2)$, and seen partial pooling via BLUPs. The next question is: **how do we estimate the population-level parameters** $(\beta, \sigma^2, \tau^2)$ when observations within a group are correlated\*\*? Because the errors are not i.i.d., ordinary least squares is no longer efficient (and its standard errors are wrong); we must account for the covariance of $\mathbf{y}$.
+
+::: {.callout-note style="color: blue" appearance="minimal" icon="false"}
+**Theorem**: In LMMs, the data are **correlated**: $$
+\text{Cov}(\mathbf{y}) = \mathbf{V} \neq \sigma^2 I.
+$$
+
+The optimal estimator becomes the **generalized least squares (GLS) estimator**:
+
+$$
+\hat{\boldsymbol{\beta}} = (\mathbf{X}^T \mathbf{V}^{-1} \mathbf{X})^{-1} \mathbf{X}^T \mathbf{V}^{-1} \mathbf{y}.
+$$
+
+for known $\mathbf{V}$. This is the **Best Linear Unbiased Estimator (BLUE)**.
+:::
+
+To derive the estimator for $(\hat{\sigma}^2, \hat{\tau}^2)$, we can use a **maximum likelihood approach** similar to OLS.
+
+The log-likelihood $l(\sigma^2, \tau^2)$ is:
+
+$$
+l(\sigma^2, \tau^2) = \frac{-N}{2} log(2\pi) - \frac{1}{2} log|\mathbf{V}| - \frac{1}{2} (\mathbf{y} - \mathbf{X}\mathbf{\tilde{\beta}})^T\mathbf{V}^{-1} (\mathbf{y} - \mathbf{X}\mathbf{\tilde{\beta}})
+$$
+
+Plugging in $\tilde{\beta}_{GLS} = (X^T V^{-1} X)^{-1}X^T V^{-1}y$, it is straightforward to maximize the above function over the 2-D domain of $\sigma^2$ and $\tau^2$ to give their MLEs. This method of substituting $\beta$ with their MLE fixed at some other parameters is known as a `r colorize("profile likelihood approach", "red")`.
+
+------------------------------------------------------------------------
+
+### Variance Components: REML
+
+**Why MLE can be biased for variances.** In the simple Normal model with unknown mean,
+
+$$
+  y_i \sim N(\mu,\sigma^2),\quad i=1,\dots,n,
+$$
+
+the **MLE** of $\sigma^2$ given by:
+
+$$
+  \hat\sigma^2_{\text{ML}}=\frac{1}{n}\sum_{i=1}^n (y_i-\bar y)^2
+$$ is biased downward:
+
+$$E[\hat\sigma^2_{\text{ML}}]=\frac{n-1}{n}\sigma^2\neq\sigma^2$$.
+
+The bias occurs because the sample mean $\bar{y}$ is itself estimated from the data. Since one degree of freedom is "spent" estimating $\mu$, the spread around $\bar{y}$ systematically underestimates the true spread around $\mu$.
+
+**Restricted (or Residual) Maximum Likelihood** maximizes a likelihood based only on `r colorize("error contrast", "red")`- linear combinations of the data that contain no information about $\beta$. By working with these contrasts, REML avoids "using up" degrees of freedom on estimating $\beta$, which removes the downward bias in variance estimates.
+
+$$
+l_R(\sigma^2, \tau^2) = l(\sigma^2, \tau^2) -\frac{1}{2} log|X^T V^{-1}X|  
+$$
+
+In the simple case of estimating $\sigma^2$, we have:
+
+$$
+\begin{align*}
+\hat{\sigma}^2_{ML}& = \frac{1}{n} \sum_i (y_i - \bar{y})^2\\
+\hat{\sigma}^2_{REML}& = \frac{1}{n-1} \sum_i (y_i - \bar{y})^2
+\end{align*}
+$$
+
+which corrects the ML bias by using $n-1$ (not $n$) in the denominator. This adjustment removes the degrees of freedom used to estimate $\beta$, reducing small-sample bias in variance components.
+
+In mixed models, the REML likelihood effectively uses $n-p$ residual degrees of freedom, where $p$ is the number of fixed-effect parameters.
+
+-   **Practical notes.**
+    -   REML is preferred for **estimating variance components** and is the **default** in `lme4::lmer()` (`REML = TRUE`).\
+    -   (Heads-up) When comparing models with **different fixed-effects structures**, fit with **ML** (`REML = FALSE`) so the likelihoods are comparable.
+-   **Why variance matters for** $\beta$ in mixed models.\
+    In OLS, $\hat\beta=(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ does **not** depend on $\sigma^2$.\
+    In mixed models, the fixed effects are estimated by **GLS**, $$
+    \hat\beta=\big(\mathbf{X}^\top\mathbf{V}^{-1}\mathbf{X}\big)^{-1}\mathbf{X}^\top\mathbf{V}^{-1}\mathbf{y},
+    $$ where $\mathbf{V}$ contains the variance components (e.g., $\sigma^2,\tau^2$).\
+    Thus, good variance-component estimates (via REML) improve the estimation and inference for $\beta$.
+
+------------------------------------------------------------------------
+
+### Motivating Example: The TLC data cont'd
+
+Let's revisit the TLC data example to see how these ideas work in practice.
+
+```{r, message = F}
+
+library(nlme) 
+library(ggplot2)
+library(dplyr)
+library(gridExtra) 
+library(lme4)
+library(broom.mixed)
+library(modelsummary)
+
+tlcdata <- readRDS("data/tlc.RDS")
+
+tlc.ml <- lmer(lead ~ week + (1|id), data = tlcdata, REML = F) #ML approach for vars
+
+tlc.reml <- lmer(lead ~ week + (1|id),  data = tlcdata) #REML (Default) approach for vars
+
+
+# Fixed effects with CIs
+fixef_ml   <- tidy(tlc.ml,   effects = "fixed", conf.int = TRUE)
+fixef_reml <- tidy(tlc.reml, effects = "fixed", conf.int = TRUE)
+
+# Random-effect variances (tau^2, sigma^2)
+ran_ml   <- tidy(tlc.ml,   effects = "ran_pars", conf.int = TRUE)
+ran_reml <- tidy(tlc.reml, effects = "ran_pars", conf.int = TRUE)
+
+# Compact side-by-side summary (coef tables + fit stats)
+modelsummary(
+  list("ML (full LL)" = tlc.ml, "REML (restricted LL)" = tlc.reml),
+  estimate  = "{estimate}",
+  statistic = "SE = {std.error}, t = {statistic}",
+  gof_map = c("AIC","BIC","logLik","REMLcrit","ICC"),
+  stars = FALSE, fmt = 3
+)
+
+
+
+```
+
+------------------------------------------------------------------------
+
+`r colorize("Summary", "purple")`
+
+| **Section**                                 | **Description**                                                                                                                                                                                                                                                                                                                                               |
+|-------------------------------|-----------------------------------------|
+| **Partial pooling (BLUP)**                  | Random--intercept models **shrink** subject intercepts toward the population mean. More shrinkage with **small** $n_i$, **large** $\sigma^2$, or **small** $\tau^2$.                                                                                                                                                                                          |
+| **BLUP of** $\theta_i$ (no fixed effects)   | $\hat{\theta}_i=\dfrac{n_i}{n_i+\sigma^2/\tau^2}\,\bar y_i \equiv B_i\bar y_i$. Notes: $\tau^2\!\to\!0 \Rightarrow B_i\!\to\!0$ (shrink to 0); $\tau^2\!\to\!\infty \Rightarrow B_i\!\to\!1$ (no shrinkage).                                                                                                                                                  |
+| **Hierarchical formulation**                | $y_{ij}=\mu+\theta_i+\epsilon_{ij}$, with $\theta_i\sim N(0,\tau^2)$ and $\epsilon_{ij}\sim N(0,\sigma^2)$. Two levels: (1) $y_{ij}\mid\theta_i\sim N(\mu+\theta_i,\sigma^2)$; (2) $\theta_i\sim N(0,\tau^2)$.                                                                                                                                                |
+| **Borrowing of information (weights)**      | $\hat{\theta}_i=\dfrac{(1/\tau^2)\mu+(n_i/\sigma^2)\bar y_i}{1/\tau^2+n_i/\sigma^2}$. Small $n_i$ pulls estimates toward $\mu$; large $n_i$ relies more on $\bar y_i$. With $\rho=\tfrac{\tau^2}{\tau^2+\sigma^2}$, an equivalent weighted form is given in the notes.                                                                                        |
+| **Correlated data → GLS for fixed effects** | With $\operatorname{Cov}(\mathbf y)=\mathbf V$ (positive definite), $$\hat\beta_{GLS}=(\mathbf X^\top\mathbf V^{-1}\mathbf X)^{-1}\mathbf X^\top\mathbf V^{-1}\mathbf y.$$ OLS is the special case $\mathbf V=\sigma^2\mathbf I$.                                                                                                                             |
+| **Variance components: ML vs REML**         | **ML** variance estimates are biased downward (like dividing by $n$). **REML** maximizes a likelihood of error contrasts that remove fixed-effect information, reducing small-sample bias (analogue: divide by $n-p$). **Practice:** use REML for variance components (default in `lme4::lmer()`); use ML when comparing models with different fixed effects. |

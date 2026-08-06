@@ -1,0 +1,623 @@
+# Module 2D Generalized Linear Mixed Models {.unnumbered}
+
+```{r, hide =T, echo=F, message = F}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+library(dplyr)
+library(glmnet)
+library(lme4)
+library(ggplot2)
+```
+
+School data example adapted from Gelman and Hill. [Data Analysis Using Regression and Multilevel/Hierarchical Models](https://sites.stat.columbia.edu/gelman/arm/)
+
+Guatemalan data example: Rodriguez B and Goldman N (2001). Improved estimation procedures for multilevel models with binary response: a case study. Journal of Royal Statistical Society Series A 339-355.
+
+### Motivation and Examples
+
+::: {.callout-important .illustration style="color: red"}
+## Motivation:
+
+**Hierarchical** or **multilevel** models are used when observations are nested (.e.g, students within schools, repeated measures within individuals). Standard regression models ignore clustering, which leads to **underestimated standard errors** and **biased inference**.
+
+Hierarchical models can be thought of as GLMs that are reparametrized to separate **with-in** group and **between** group sources of variation with **nested** data structures. These include:
+
+-   Fixed effects for population-level estimates
+-   Random effects for group-specific deviations.
+-   Can have multiple levels within one model structure.
+
+This has a very Bayesian Flavor! So it is more natural for me to think this way.
+:::
+
+### Motivating Example: School Math Scores
+
+We consider a three-level hierarchical model of math achievement data.
+
+Levels:
+
+-   Level 1 (Year within child):
+
+    -   $math_{ijk}$: standardized math score of child $j$ in school $i$ during year $k$.
+    -   $year_{ijk}$: primary school year (centered at 3.5).
+    -   $retained_{ijk}$: indicator for repeating the grade.
+
+-   Level 2 (Child within school):
+
+    -   $child_{ij}$: child ID.
+    -   $female_{ij}$: indicator for female.
+    -   $black_{ij}$, $hispanic_{ij}$: race/ethnicity indicators.
+
+-   Level 3 (School):
+
+    -   $school_i$: school ID.
+    -   $size_i$: number of students in school $i$.
+    -   $lowinc_i$: percentage of low-income students in school $i$.
+
+```{r}
+dat <- read.csv(paste0(getwd(), "/data/achievement.csv"))
+dim(dat)
+dat[1:6,]
+
+ggplot(dat, aes(x = year, y = math, group = child, color = factor(school))) +
+  geom_line(alpha = 0.4) +      # line for each student's trajectory
+  geom_point(alpha = 0.6) +     # points for observations
+  labs(
+    title = "Student Math Scores Over Time",
+    x = "Year",
+    y = "Math Score",
+    color = "School"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+The plot above shows individual trajectories of student scores across years. Colors denote school.
+
+------------------------------------------------------------------------
+
+### Fitting a Linear Mixed Model
+
+Using the methods we have learned so far, we would fit a linear mixed model (LMM). We can include a random intercept model to account for student-specific differences in baseline math scores:
+
+$$
+\text{math}_{ijk} = \beta_0 + \beta_1 \, \text{year}_{ijk} + \beta_2 \, \text{female}_{ij} + \beta_3 \, \text{black}_{ij} + \beta_4 \, \text{hispanic}_{ij} + \beta_5 \, \text{retained}_{ij} + u_{i} + \epsilon_{ijk},
+$$
+
+where:\
+- $i$ indexes students within school $j$,\
+- $u_{i} \sim N(0, \tau^2)$ is a **student-specific random intercept**,\
+- $\epsilon_{ijk} \sim N(0, \sigma^2)$ is the residual error term.
+
+This model *partially pools* the intercepts across students, borrowing strength from the entire dataset while still allowing each student to have its own baseline.
+
+`r colorize("Problem!", "red")`: Years are **nested within students**, and **students are nested within schools**. In other words, the math scores are measured repeatedly for each student (longitudinal data), and these students are clustered within schools. So even if we account for within student correlation, we have not accounted for within school correlation. A standard LLM fails to account for this hierarchical data structure.
+
+------------------------------------------------------------------------
+
+### The Better Approach: Three Level Linear Mixed Model
+
+We extend the previous model to account for **both student-level and school-level random intercepts**, fully respecting the data hierarchy (years within students, and students within schools).
+
+$$
+\begin{align*}
+math_{ijk} & \sim Normal(\mu_{ijk}, \sigma^2)\\
+\mu_{ijk} & = \beta_0 + \beta_1 \, \text{year}_{ijk} + \beta_2 \, \text{female}_{ij} + \beta_3 \, \text{black}_{ij} + \beta_4 \, \text{hispanic}_{ij} + \beta_5 \, \text{retained}_{ij} + \underbrace{u_{i}}_{\text{school}}  + \underbrace{u_{ij}}_{\text{student within school}},\\
+u_{ij} & \overset{iid}{\sim} N(0, \tau^2)\\
+u_i & \overset{iid}{\sim} N(0, \nu^2)\\
+\epsilon_{ijk} & \overset{iid}{\sim} N(0, \sigma^2). \quad \text{residual error for year-student-school}
+\end{align*}
+$$
+
+We can think of $u_i$ and $u_{ij}$ as parameters that control for `r colorize("unmeasured confounders", "red")` at the school and student level.
+
+*"One statistician's mean structure is another's covariance structure." (Donald Rubin)*
+
+-   In **frequentist mixed models**, random effects are viewed as part of the **covariance structure** because they induce correlation between observations within a cluster. The random effects are integrated out when estimating the model, and their variability (e.g., $\tau^2$) contributes to the marginal covariance matrix.
+
+-   In **Bayesian or hierarchical modeling**, the same random effects are treated as part of the **mean structure** with unknown parameters that have prior distributions. We estimate the full posterior for both fixed effects and random effects.
+
+-   For example, in a linear mixed model:
+
+$$
+y_{ij} = \beta_0 + \beta_1 x_{ij} + u_i + \epsilon_{ij},
+$$
+
+we can think of:
+
+-   **Bayesian method:** $u_i$ is a **random deviation** that adjusts the mean for cluster $i$ (part of the mean structure). In our 3-level LMM, we place priors on both population-level parameters and random effects, e.g., $\beta_k \sim N(0, 10^2)$.
+
+-   **Frequentist method:** Equivalently, [the marginal distribution of $y_{ij}$]{.underline} can be expressed as:
+
+$$
+y_{ij} \sim N\!\big(\beta_0 + \beta_1 x_{ij}, \ \tau^2 + \sigma^2\big),
+$$
+
+where the extra variance $\tau^2$ is part of the **covariance structure**. We refer to the marginal distribution because in the frequentist approach the random effects are integrated out, and the variability they induce enters the covariance structure.
+
+-   In our 3-level LMM, these random effects are treated as components that induce correlation but are not explicitly estimated as parameters.
+
+------------------------------------------------------------------------
+
+### Pooling (Borrowing Information) at Multiple Levels
+
+Our three-level linear mixed model: $$
+math_{ijk} = \beta_0 + \beta_1 year_{ijk} + \cdots + u_i + u_{ij} + \epsilon_{ijk},
+$$ borrows strength across both **schools** (Level 3) and **students** (Level 2). This is known as **multi-level partial pooling**.
+
+#### 1. Pooling Across Schools
+
+-   **No pooling (separate means):** Each school mean is just its sample mean: $$
+    \hat{\mu}_i^{\text{no-pool}} = \bar{y}_i.
+    $$
+
+-   **Complete pooling (one mean):** All schools share the overall mean: $$
+    \hat{\mu}_i^{\text{complete-pool}} = \bar{y}.
+    $$
+
+-   **Partial pooling (hierarchical):** $$
+    \hat{\mu}_i^{\text{partial-pool}} = w_i \, \bar{y}_i + (1 - w_i)\, \bar{y},
+    $$ where $$
+    w_i = \frac{n_i}{n_i + \frac{\sigma^2}{\nu^2}},
+    $$ with $n_i$ = number of observations in school $i$, $\nu^2$ = between-school variance, and $\sigma^2$ = residual variance.
+
+    -   Large schools (big $n_i$) get $w_i \approx 1$ (close to **no pooling**).
+    -   Small schools (small $n_i$) get $w_i \approx 0$ (closer to **complete pooling**).
+
+#### 2. Pooling Across Students (Within Schools)
+
+Within each school $i$, we also pool across students $j$: $$
+  \hat{u}_{ij}^{\text{partial}} = w_{ij} \, (\bar{y}_{ij} - \bar{y}_i),
+  $$ where $$
+  w_{ij} = \frac{n_{ij}}{n_{ij} + \frac{\sigma^2}{\tau^2}},
+  $$ with $n_{ij}$ = number of observations for student $j$, and $\tau^2$ = student-level variance.
+
+::: {.callout-tip collapse="true" style="color:black" appearance="minimal" icon="false"}
+#### Derivation of student-level partially pooled estimate
+
+#### Step 1: Define the Student Mean
+
+For student $j$ in school $i$, the average math score is: $$
+\bar{y}_{ij} = \frac{1}{n_{ij}} \sum_{k=1}^{n_{ij}} math_{ijk}.
+$$
+
+Substituting the model: $$
+\bar{y}_{ij} = \beta_0 + u_i + u_{ij} + \frac{1}{n_{ij}} \sum_{k=1}^{n_{ij}} \epsilon_{ijk}.
+$$
+
+Define the **average residual error**: $$
+\bar{\epsilon}_{ij} = \frac{1}{n_{ij}} \sum_{k=1}^{n_{ij}} \epsilon_{ijk},
+$$ which satisfies $\bar{\epsilon}_{ij} \sim N(0, \sigma^2 / n_{ij})$.
+
+------------------------------------------------------------------------
+
+#### Step 2: Center by the School Mean
+
+Subtract the school mean $\bar{y}_i$ (which contains $\beta_0 + u_i$): $$
+\bar{y}_{ij} - \bar{y}_i = u_{ij} + \bar{\epsilon}_{ij}.
+$$
+
+This shows that a student's deviation from the school mean is driven by: - The student's random effect $u_{ij}$, - The average residual noise $\bar{\epsilon}_{ij}$.
+
+------------------------------------------------------------------------
+
+#### Step 3: Target Quantity
+
+We want the posterior mean of $u_{ij}$ given the observed deviation: $$
+\hat{u}_{ij}^{\text{partial}} = E[ u_{ij} \mid \bar{y}_{ij} - \bar{y}_i ].
+$$
+
+The prior and likelihood are: $$
+u_{ij} \sim N(0, \tau^2),
+$$ $$
+\bar{y}_{ij} - \bar{y}_i \mid u_{ij} \sim N(u_{ij}, \sigma^2 / n_{ij}).
+$$
+
+------------------------------------------------------------------------
+
+#### Step 4: Conditional Expectation
+
+For a bivariate normal vector $(U, Y)$: $$
+E[U \mid Y] = \frac{\text{Cov}(U, Y)}{\text{Var}(Y)} \,(Y - E[Y]) + E[U].
+$$
+
+Here, $U = u_{ij}$, $Y = \bar{y}_{ij} - \bar{y}_i$, and $E[U] = 0$: $$
+\text{Var}(Y) = \text{Var}(u_{ij} + \bar{\epsilon}_{ij}) = \tau^2 + \frac{\sigma^2}{n_{ij}},
+$$ $$
+\text{Cov}(u_{ij}, Y) = \text{Cov}(u_{ij}, u_{ij} + \bar{\epsilon}_{ij}) = \tau^2.
+$$
+
+Thus: $$
+E[u_{ij} \mid \bar{y}_{ij} - \bar{y}_i] =
+\frac{\tau^2}{\tau^2 + \sigma^2 / n_{ij}} (\bar{y}_{ij} - \bar{y}_i).
+$$
+
+------------------------------------------------------------------------
+
+#### Step 5: Shrinkage Weight
+
+Define: $$
+w_{ij} = \frac{\tau^2}{\tau^2 + \sigma^2 / n_{ij}} = \frac{n_{ij}}{n_{ij} + \frac{\sigma^2}{\tau^2}},
+$$ so the **partially pooled student intercept** is: $$
+\hat{u}_{ij}^{\text{partial}} = w_{ij} (\bar{y}_{ij} - \bar{y}_i).
+$$
+:::
+
+-   **Students with more data** ($n_{ij}$ large) → $w_{ij} \approx 1$, so their random intercept is close to their own average.
+
+-   **Students with sparse data** ($n_{ij}$ small) → $w_{ij} \approx 0$, so their intercept is shrunk toward the **school-level mean**.
+
+-   The **random intercepts** $u_i$ and $u_{ij}$ ensure that the model combines information from all schools and students.\
+
+-   Small or noisy groups borrow strength from the larger dataset, which improves stability and reduces overfitting.
+
+We can visualize this with a **shrinkage plot** showing raw school means vs. partially pooled estimates, as well as student-level intercepts:
+
+```{r, message = F, echo = F}
+
+library(lme4)
+library(dplyr)
+library(ggplot2)
+
+# Fit the 3-level LMM
+# math ~ fixed effects + (1 | school/child) fits random intercepts for school and child
+lmm_3level <- lmer(
+  math ~ year + female + black + hispanic + retained + 
+    (1 | school/child),  # child is nested within school
+  data = dat
+)
+
+# Compute raw (no pooling) school means
+school_means <- dat %>%
+  group_by(school) %>%
+  summarise(
+    raw_mean = mean(math),
+    school_size = n(),      # number of observations for each school
+    .groups = "drop"
+  )%>%
+  mutate(school = as.character(school))
+# Extract partially pooled school intercepts (add fixed intercept)
+school_effects <- ranef(lmm_3level)$school %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("school") %>%
+  rename(pooled_dev = `(Intercept)`)
+
+# Add global intercept
+global_intercept <- fixef(lmm_3level)["(Intercept)"]
+
+school_effects <- school_effects %>%
+  mutate(pooled = pooled_dev + global_intercept)
+
+# Combine raw means with pooled intercepts and school size
+shrinkage_df <- left_join(school_means, school_effects, by = "school")
+
+# Plot raw means vs partially pooled estimates
+ggplot(shrinkage_df, aes(x = raw_mean, y = pooled, size = school_size)) +
+  geom_point(color = "steelblue", alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray") +
+  scale_size_continuous(name = "School Size") +
+  labs(
+    x = "Raw School Mean (No Pooling)",
+    y = "Partially Pooled Estimate",
+    title = "Shrinkage of School-Level Intercepts"
+  ) +
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+### Covariance Structures in Hierarchical GLMMs
+
+For the **three-level linear mixed model**:
+
+$$
+\begin{aligned}
+math_{ijk} &\sim \text{Normal}(\mu_{ijk}, \sigma^2), \\
+\mu_{ijk} &= \beta_0 + u_i + u_{ij} + \beta_1' x_{ijk} + \beta_2' x_{ij} + \beta_3' x_i, \\
+u_i &\sim N(0, \nu^2), \quad u_{ij} \sim N(0, \tau^2),
+\end{aligned}
+$$
+
+where:
+
+-   $u_i$ is the **school-level random intercept**,
+-   $u_{ij}$ is the **student-level random intercept** (nested within school $i$),
+-   $\sigma^2$ is the residual (Level 1) variance for observations within a student.
+
+------------------------------------------------------------------------
+
+##### Conditional Variance
+
+Conditioned on the random effects $u_i$ and $u_{ij}$, the distribution of $math_{ijk}$ is:
+
+$$
+math_{ijk}|u_i, u_{ij} \sim N(\mu_{ijk}, \sigma^2)
+$$
+
+where $\mu_{ijk}$ is the linear predictor: $$
+E(math_{ijk}|u_i, u_{ij}) = \mu_{ijk} = \beta_0 + \beta^{(1)'} x_{ijk} + \beta^{(2)'} x_{ij} + u_i + u_{ij},
+$$ and $$
+Var(math_{ijk} \mid u_i, u_{ij}) = \sigma^2,
+$$
+
+::: {.callout-tip collapse="true" style="color:black" appearance="minimal" icon="false"}
+#### Derivation of conditional variance
+
+Conditioned on the random effects $u_i$ and $u_{ij}$, we can write: $$
+math_{ijk} \mid u_i, u_{ij} = \mu_{ijk} + \epsilon_{ijk}.
+$$
+
+Since $\mu_{ijk}$ is treated as fixed once we condition on $u_i$ and $u_{ij}$, the only remaining random component is $\epsilon_{ijk}$. Therefore: $$
+\begin{aligned}
+Var(math_{ijk} \mid u_i, u_{ij}) 
+&= Var(\mu_{ijk} + \epsilon_{ijk} \mid u_i, u_{ij}) \\
+&= Var(\epsilon_{ijk}) \\
+&= \sigma^2.
+\end{aligned}
+$$
+:::
+
+------------------------------------------------------------------------
+
+##### Total Variance
+
+This variance $\sigma^2$ describes the **Level 1 variability (within-student, across years)**, assuming the random effects $u_i$ and $u_{ij}$ are fixed.
+
+The **total variability** in $math_{ijk}$ can be decomposed into:
+
+$$
+Var(math_{ijk}) = \nu^2 + \tau^2 + \sigma^2,
+$$
+
+where:
+
+-   $\nu^2$ reflects **between-school variability**,
+-   $\tau^2$ reflects **between-student variability (within school)**,
+-   $\sigma^2$ reflects **within-student residual variability**.
+
+::: {.callout-tip collapse="true" style="color:black" appearance="minimal" icon="false"}
+#### Derivation of Total Variance
+
+For the three-level linear mixed model: $$
+math_{ijk} = \beta_0 + \beta_1 \, year_{ijk} + \cdots + u_i + u_{ij} + \epsilon_{ijk},
+$$ we assume: $$
+u_i \sim N(0, \nu^2), \quad u_{ij} \sim N(0, \tau^2), \quad \epsilon_{ijk} \sim N(0, \sigma^2),
+$$ with all random components **mutually independent**.
+
+We want to show that: $$
+Var(math_{ijk}) = \nu^2 + \tau^2 + \sigma^2.
+$$
+
+------------------------------------------------------------------------
+
+#### Step 1: Apply the Law of Total Variance
+
+The law of total variance states: $$
+Var(Y) = E[Var(Y \mid U)] + Var(E[Y \mid U]),
+$$ where $U$ represents any random variables we are conditioning on.
+
+In our case, we condition on both $u_i$ and $u_{ij}$: $$
+Var(math_{ijk}) = E[Var(math_{ijk} \mid u_i, u_{ij})] + Var(E[math_{ijk} \mid u_i, u_{ij}]).
+$$
+
+------------------------------------------------------------------------
+
+#### Step 2: Compute the Conditional Variance
+
+From the model: $$
+math_{ijk} \mid u_i, u_{ij} = \mu_{ijk} + \epsilon_{ijk},
+$$ where $\mu_{ijk} = \beta_0 + \beta_1 \, year_{ijk} + \cdots + u_i + u_{ij}$.
+
+Conditioned on $u_i$ and $u_{ij}$, the only random term is $\epsilon_{ijk}$, so: $$
+Var(math_{ijk} \mid u_i, u_{ij}) = Var(\epsilon_{ijk}) = \sigma^2.
+$$ Therefore: $$
+E[Var(math_{ijk} \mid u_i, u_{ij})] = \sigma^2.
+$$
+
+------------------------------------------------------------------------
+
+#### Step 3: Compute the Variance of the Conditional Expectation
+
+The conditional expectation is: $$
+E[math_{ijk} \mid u_i, u_{ij}] = \mu_{ijk} = \beta_0 + \beta_1 \, year_{ijk} + \cdots + u_i + u_{ij}.
+$$
+
+The fixed terms $\beta_0 + \beta_1 \, year_{ijk} + \cdots$ have no variance, so: $$
+Var(E[math_{ijk} \mid u_i, u_{ij}]) = Var(u_i + u_{ij}) = Var(u_i) + Var(u_{ij}),
+$$ because $u_i$ and $u_{ij}$ are independent. Thus: $$
+Var(E[math_{ijk} \mid u_i, u_{ij}]) = \nu^2 + \tau^2.
+$$
+
+------------------------------------------------------------------------
+
+#### Step 4: Combine Results
+
+Putting it all together: $$
+Var(math_{ijk}) = E[Var(math_{ijk} \mid u_i, u_{ij})] + Var(E[math_{ijk} \mid u_i, u_{ij}])
+= \sigma^2 + (\nu^2 + \tau^2)
+= \nu^2 + \tau^2 + \sigma^2.
+$$
+:::
+
+------------------------------------------------------------------------
+
+```{=html}
+<!--##### Marginal Variance
+
+After integrating over the random effects, observations within the same **student** or **school** become correlated because they share the same random intercepts.
+
+- **Within-student correlation (same student, same school):**  
+  Multiple observations for the same student share both $u_{ij}$ (student-level effect) and $u_i$ (school-level effect).
+
+- **Within-school correlation (different students in the same school):**  
+  Observations from different students in the same school share the same $u_i$ but have different $u_{ij}$.
+
+Formally, for two observations $math_{ijk}$ and $math_{ijk'}$ from the **same student** $j$ in the **same school** $i$, we have:
+$$
+Cov(math_{ijk}, math_{ijk'} \mid u_i, u_{ij}) = 0,
+$$
+because, given $u_i$ and $u_{ij}$, the residuals $\epsilon_{ijk}$ are independent.
+
+However, the **marginal covariance** (after integrating over the random effects $u_i$ and $u_{ij}$) is **non-zero** because these observations share the same random intercepts, inducing correlation.
+
+
+
+
+----->
+```
+
+#### Conditional vs. Marginal Covariance
+
+For two observations $math_{ijk}$ and $math_{ijk'}$ from the **same student** $j$ in the **same school** $i$: $$
+Cov(math_{ijk}, math_{ijk'} \mid u_i, u_{ij}) = 0,
+$$ because, conditioned on $u_i$ and $u_{ij}$, the residual errors $\epsilon_{ijk}$ are independent.
+
+However, the **marginal covariance** (after integrating over the random effects) is: $$
+Cov(math_{ijk}, math_{ijk'}) = \nu^2 + \tau^2,
+$$ since both observations share $u_i$ (school effect) and $u_{ij}$ (student effect).
+
+For two students $j \neq j'$ in the **same school** $i$: $$
+Cov(math_{ijk}, math_{ij'k'}) = \nu^2,
+$$ because they share only the school effect $u_i$.
+
+------------------------------------------------------------------------
+
+### Intraclass Correlation Coefficients (ICC)
+
+The total variance of $math_{ijk}$ is: $$
+Var(math_{ijk}) = \nu^2 + \tau^2 + \sigma^2.
+$$
+
+The **school-level intraclass correlation (ICC)**, which measures the proportion of variance explained by differences between schools, is: $$
+ICC_{\text{school}} = \frac{\nu^2}{\nu^2 + \tau^2 + \sigma^2}.
+$$
+
+The **student-level ICC (within a school)** is: $$
+ICC_{\text{student}} = \frac{\nu^2 + \tau^2}{\nu^2 + \tau^2 + \sigma^2}.
+$$
+
+These ICCs quantify how strongly scores are correlated for students within the same school or the same student across multiple years.
+
+------------------------------------------------------------------------
+
+### Hierarchical GLMM Fitting in R
+
+```{r}
+# Load required package
+library(lme4)
+
+# Fit the 3-level LMM
+# math ~ fixed effects + (1 | school/child) fits random intercepts for school and child
+lmm_3level <- lmer(
+  math ~ year + female + black + hispanic + retained + 
+    (1 | school/child),  # child is nested within school
+  data = dat
+)
+
+# Display model summary
+summary(lmm_3level)
+```
+
+````{=html}
+<!--`r colorize("What warning is this??", "red")`
+
+Convergence issues can happen for several reasons:
+
+-   **Model complexity**: The model may be too complex, with too many random effects or predictors that cause instability in the estimation process.
+
+-   **Insufficient data**: You might not have enough data to estimate all parameters properly, especially for random effects.
+
+-   **Scaling issues**: Poor scaling of variables can make the optimization problem numerically unstable.
+
+-   **Starting values**: Sometimes, the optimizer doesn't start close enough to a good solution.
+
+-   Use the `control` argument in **`glmer`** to allow more iterations or to relax convergence criteria.
+
+````{=html}
+<!--```{r}
+fit_opt <- glmer(immun ~ kid2p + momEdPri + momEdSec + husEdPri + husEdSec + rural + pcInd81 + (1|mom) + (1|cluster), family = binomial, data = dat, control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+
+summary(fit_opt)
+```-->
+````
+
+### Model Interpretations
+
+#### Random Effects
+
+-   **School-level variance (**$\nu^2 = 0.1292$):\
+    Differences between schools account for some variation in math scores (Std. Dev. = 0.359).\
+    This suggests that students from different schools start at different baseline math levels.
+
+-   **Student-level variance (**$\tau^2 = 0.6638$):\
+    Differences between students (within schools) account for a larger portion of variability (Std. Dev. = 0.815), indicating substantial heterogeneity across students.
+
+-   **Residual variance (**$\sigma^2 = 0.3445$):\
+    Variation in math scores within the same student (across years) after accounting for predictors is 0.3445 (Std. Dev. = 0.587).
+
+-   **Number of groups:**\
+    There are 60 schools and 1,721 students across 7,230 total observations.
+
+#### Fixed Effects
+
+-   **Intercept (-0.348):**\
+    The expected math score for a reference student (male, non-Black, non-Hispanic, not retained) in year 0 is -0.35 (on the standardized scale).
+
+-   **Year (0.748):**\
+    On average, math scores increase by 0.748 units per year, **holding all other factors constant**.\
+    This is a **strong positive trend** over time (t = 138.7).
+
+-   **Female (0.00001):**\
+    The coefficient for being female is nearly zero (and not statistically significant).
+
+-   **Black (-0.623):**\
+    Black students have an average math score 0.62 units lower than non-Black students, holding other variables constant (t = -7.92).
+
+-   **Hispanic (-0.364):**\
+    Hispanic students have an average math score 0.36 units lower than non-Hispanic students (t = -4.13).
+
+-   **Retained (0.149):**\
+    Students who were retained (repeated a grade) have math scores approximately 0.15 units higher than otherwise similar students (t = 4.21). This may reflect additional time or intervention effects.
+
+We can calculate ICCs directly from the variance components of the model:
+
+```{r}
+# Extract variance components
+vc <- as.data.frame(VarCorr(lmm_3level))
+
+# Variance components
+var_school  <- vc[vc$grp == "school", "vcov"]         # ν² (between schools)
+var_child   <- vc[vc$grp == "child:school", "vcov"]   # τ² (between students within schools)
+var_resid  <- vc[vc$grp == "Residual", "vcov"]      # σ² (within students)
+
+# Total variance
+var_total <- var_school + var_child + var_resid
+
+# ICCs
+ICC_school  <- var_school / var_total
+ICC_student <- (var_school + var_child) / var_total
+
+ICC_school
+ICC_student
+```
+
+------------------------------------------------------------------------
+
+## `r colorize("Summary", "purple")`
+
+| **Section** | **Description** |
+|----|----|
+| **What is the model?** | A **three-level hierarchical linear model** extends linear regression to account for **nested data structures**---specifically, **years within students**, and **students within schools**. <br> The model includes two random intercepts: <br> $y_{ijk} = X_{ijk}\beta + u_i + u_{ij} + \epsilon_{ijk}$, where $u_i \sim N(0, \nu^2)$ and $u_{ij} \sim N(0, \tau^2)$. |
+| **Motivation** | Hierarchical or **multilevel data** violate the independence assumption of standard linear models. Ignoring the nesting---repeated years per student, students within schools---leads to **underestimated standard errors** and **biased inference**. Hierarchical models account for this by modeling **correlated errors at each level**. |
+| **Model Components** | **Level 1:** residual error $\epsilon_{ijk} \sim N(0, \sigma^2)$ <br> **Level 2:** student-level random intercept $u_{ij} \sim N(0, \tau^2)$ <br> **Level 3:** school-level random intercept $u_i \sim N(0, \nu^2)$ <br> The systematic component is: $\mu_{ijk} = \beta_0 + X_{ijk} \beta + u_i + u_{ij}$ |
+| **Hierarchical Partial Pooling** | The model performs **partial pooling** across both schools and students. <br> - **School-level:** $\hat{\mu}_i^{\text{partial}} = w_i \bar{y}_i + (1 - w_i)\bar{y}$ with $w_i = \frac{n_i}{n_i + \frac{\sigma^2}{\nu^2}}$ <br> - **Student-level:** $\hat{u}_{ij}^{\text{partial}} = w_{ij} (\bar{y}_{ij} - \bar{y}_i)$ with $w_{ij} = \frac{n_{ij}}{n_{ij} + \frac{\sigma^2}{\tau^2}}$ |
+| **Likelihood** | The likelihood reflects **two nested levels of integration over random effects**: <br> $L(\beta, \nu^2, \tau^2 \mid y) = \prod_i \int \prod_j \int \prod_k p(y_{ijk} \mid u_i, u_{ij}) \, p(u_{ij}) \, du_{ij} \, p(u_i) \, du_i$ <br> Estimated using **REML** (frequentist) or **MCMC** (Bayesian) methods. |
+| **Interpretation** | \- **Fixed effects (**$\beta$): average effects across all observations (e.g., year, race, gender) <br> - **Random effects (**$u_i$, $u_{ij}$): group-specific deviations <br> - **Variance components:** $\nu^2$ (school), $\tau^2$ (student), $\sigma^2$ (within-student error) |
+| **Model Diagnostics** | \- **ICC (school):** $ICC_{\text{school}} = \frac{\nu^2}{\nu^2 + \tau^2 + \sigma^2}$ <br> - **ICC (student):** $ICC_{\text{student}} = \frac{\nu^2 + \tau^2}{\nu^2 + \tau^2 + \sigma^2}$ <br> ICCs quantify clustering at each level. |
+| **Example (School Math Scores)** | Fitted model: <br> $math_{ijk} = \beta_0 + \beta_1 \cdot year_{ijk} + \cdots + u_i + u_{ij} + \epsilon_{ijk}$ <br> - **Between-school SD:** 0.359 <br> - **Between-student SD:** 0.815 <br> - **Residual SD:** 0.587 <br> These values reflect variability at each level of the hierarchy. |

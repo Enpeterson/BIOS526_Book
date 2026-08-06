@@ -1,0 +1,379 @@
+# Module 3B Marginal Models {.unnumbered}
+
+```{r, hide =T, echo=F, message = F}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+
+```
+
+### Motivation and Examples
+
+::: {.callout-important .illustration style="color: red"}
+**Generalized Estimating Equations (GEE):** extend regression models to handle correlated response data while still targeting **population-level associations**.
+
+-   GEE does not require a full likelihood specification; instead, it uses *estimating equations* and a *working correlation structure* $R_i(\alpha)$ to improve efficiency.
+
+-   Both **WLS** and **GLS** can be seen as special cases of the more general GEE framework.
+
+-   GEE extends these ideas beyond linear models to handle correlated data with **non-Gaussian** outcomes through a quasi-likelihood approach.
+
+For example, suppose we have repeated binary outcomes $y_{it}$ for subject $i$ at time $t$:
+
+$$
+\text{logit}\{\Pr(y_{it}=1)\} = \mathbf{x}_{it}^\top \beta
+$$
+
+A **working covariance matrix** $\mathbf{V}_i$ for subject $i$ that accounts for correlation between repeated measures:
+
+$$
+\mathbf{V}_i = \mathbf{A}_i^{1/2}\,\mathbf{R}(\alpha)\,\mathbf{A}_i^{1/2},
+$$
+
+where $\mathbf{A}_i$ is a diagonal variance matrix (from the mean model) and $\mathbf{R}(\alpha)$ is a correlation structure (e.g., exchangeable, AR(1)).
+
+We are interested in learning the **average effect of covariates** on the outcome across the population, while accounting for within-subject correlation. GEE provides a way to solve for $\beta$ using the estimating equation:
+
+$$
+U(\beta) = \sum_i^\top D_i V_i^{-1}(y_i - \mu_i) = 0,
+$$
+
+where $D_i = \partial \mu_i/\partial \beta^\top$ (the derivative that tells us how each subject’s expected outcomes $\mu_i$ change as we change the regression coefficients $\beta$.
+:::
+
+------------------------------------------------------------------------
+
+### Toy Example: Efficiency Under Different Weighting Schemes
+
+Suppose we collect three measurements, two from the same subject and one from a different subject. Because two measurements come from the same subject, they might be correlated, while the third is independent. How should we combine these observations to estimate the overall population mean?
+
+Consider a data $y_1, y_2, y_3$. Mathematically, we can represent this with a covariance matrix where $y_1$ and $y_2$ are correlated, while $y_3$ is independent.
+
+$$
+\begin{pmatrix}
+y_1 \\
+y_2 \\
+y_3
+\end{pmatrix} \sim N \left(\begin{pmatrix}
+\mu\\ 
+\mu \\ 
+\mu\end{pmatrix}), 
+\Sigma = \begin{bmatrix}
+\sigma^2  & R & 0\\
+R & \sigma^2 & 0 \\
+0 & 0 & \sigma^2 \end{bmatrix}
+\right)
+$$
+
+A general linear estimator has the form $$
+\hat\mu = w_1 y_1 + w_2 y_2 + w_3 y_3, \qquad \sum_{k=1}^3 w_k = 1,
+$$ with variance $$
+\operatorname{Var}(\hat\mu) = (w_1^2+w_2^2+w_3^2)\,\sigma^2 + 2 w_1 w_2 R.
+$$
+
+------------------------------------------------------------------------
+
+#### Candidate Weighting Schemes
+
+1.  **Simple average** (ignore correlation): $$
+    \mathbf{w} = \Big[\tfrac{1}{3}, \tfrac{1}{3}, \tfrac{1}{3}\Big].
+    $$
+
+The above estimator has variance:
+
+$$
+\left(\frac{1}{3},\frac{1}{3}, \frac{1}{3}\right)\Sigma\left(\frac{1}{3},\frac{1}{3}, \frac{1}{3}\right)^T = \frac{3\sigma^2 + 2R}{9}
+$$ So we can see $R \uparrow$ then $\text{variance} \uparrow$. It is minimized when $R=0$.
+
+2.  **Downweight duplicates** ($y_1,y_2$ share the weight of one independent point): $$
+    \mathbf{w} = \Big[\tfrac{1}{4}, \tfrac{1}{4}, \tfrac{1}{2}\Big].
+    $$
+
+3.  **Optimal GLS weights** (assuming $R,\sigma^2$ known): $$
+    \mathbf{w} =
+    \left(\frac{\sigma^2}{R+3\sigma^2},\;
+          \frac{\sigma^2}{R+3\sigma^2},\;
+          \frac{R+\sigma^2}{R+3\sigma^2}\right).
+    $$ This minimizes $\operatorname{Var}(\hat\mu)$ because the **GLS estimator** chooses weights proportional to $\Sigma^{-1}$, re-weighting the observations to achieve minimum variance.
+
+------------------------------------------------------------------------
+
+#### Estimating Equations for the Mean $\hat{\mu}$
+
+In our toy example with three observations $y_1,y_2,y_3$, any estimator of the population mean can be written as a **weighted average**:
+
+All estimators can be written as $$
+\hat\mu = \sum_{k=1}^k w_k y_k, \qquad \sum w_k=1,
+$$ which comes from the estimating equation $\sum w_k(y_k-\mu)=0$.\
+The difference is in the choice of weights:
+
+| **Estimator** | **Weights** $(w_1,w_2,w_3)$ | **Formula for** $\hat\mu$ | **When is it best?** |
+|----|----|----|----|
+| Equal weights | $\big(\tfrac{1}{3},\tfrac{1}{3},\tfrac{1}{3}\big)$ | $\tfrac{1}{3}(y_1+y_2+y_3)$ | When $R=0$ (independent) |
+| Downweight duplicates | $\big(\tfrac{1}{4},\tfrac{1}{4},\tfrac{1}{2}\big)$ | $\tfrac{1}{4}(y_1+y_2)+\tfrac{1}{2}y_3$ | When $y_1,y_2$ are nearly identical ($R\approx\sigma^2$) |
+| Optimal GLS (BLUE) | $\big(\tfrac{\sigma^2}{R+3\sigma^2},\tfrac{\sigma^2}{R+3\sigma^2},\tfrac{R+\sigma^2}{R+3\sigma^2}\big)$ | $\tfrac{\sigma^2}{R+3\sigma^2}(y_1+y_2)+\tfrac{R+\sigma^2}{R+3\sigma^2}y_3$ | Always variance-optimal |
+
+How to answer **When is it best?** means we need to look at the efficiency (variance) across the scenarios.
+
+#### Variance Comparison
+
+| Estimator Weights | $\operatorname{Var}(\hat{\mu})$ | $R=0$ | $R=0.5\sigma^2$ | $R=\sigma^2$ |
+|----|----|----|----|----|
+| $\left[\tfrac{1}{3},\tfrac{1}{3},\tfrac{1}{3}\right]$ | $\tfrac{3\sigma^2+2R}{9}$ | $\tfrac{1}{3}\sigma^2$ | $\tfrac{4}{9}\sigma^2$ | $\tfrac{5}{9}\sigma^2$ |
+| $\left[\tfrac{1}{4},\tfrac{1}{4},\tfrac{1}{2}\right]$ | $\tfrac{3}{8}\sigma^2+\tfrac{1}{8}R$ | $\tfrac{3}{8}\sigma^2$ | $\tfrac{7}{16}\sigma^2$ | $\tfrac{1}{2}\sigma^2$ |
+| $\left[\tfrac{1}{3+R/\sigma^2},\tfrac{1}{3+R/\sigma^2},\tfrac{1+R/\sigma^2}{3+R/\sigma^2}\right]$ | $\tfrac{(R+\sigma^2)}{R+3\sigma^2}\,\sigma^2$ | $\tfrac{1}{3}\sigma^2$ | $\tfrac{3}{7}\sigma^2$ | $\tfrac{1}{2}\sigma^2$ |
+
+-   **Scenario 1 (simple average):** always unbiased, but inefficient when $R>0$ because correlated data don’t provide fully independent information.
+
+-   **Scenario 2 (downweight duplicates):** mimics treating $y_1,y_2$ as one effective observation. This matches the GLS solution when $R\to\sigma^2$ (perfect correlation).
+
+-   **Scenario 3 (optimal GLS):** true minimum-variance estimator. Reduces to equal weights when $R=0$, and smoothly downweights correlated observations as $R$ increases.
+
+**Summary:** Accounting for correlation doesn’t change unbiasedness but it *does* change efficiency. GLS chooses weights that make the estimator as precise as possible.
+
+------------------------------------------------------------------------
+
+### General Connection: Extending Estimating Equations in GLMs
+
+The same idea extends far beyond this toy mean problem.\
+In **GLMs**, parameter estimates are defined by **estimating equations**.
+
+For models in the exponential family (Normal, Bernoulli/Logistic, Poisson, etc.), the **score equations**---the first derivatives of the log-likelihood with respect to the parameters---take a common form.
+
+$$
+\sum_{i=1}^n 
+\frac{\partial \mu_i(\beta)}{\partial \beta_k}\,
+V_i^{-1}\,
+\big(y_i - \mu_i(\beta)\big) = 0, 
+\qquad k=1,\dots,p.
+$$
+
+-   $\mu_i(\beta)=E[y_i\mid x_i;\beta]$: mean function\
+-   $V_i$: variance of $y_i$\
+-   $\tfrac{\partial \mu_i(\beta)}{\partial \beta}$: derivative linking covariates to the mean\
+-   These equations are solved simultaneously to obtain the maximum likelihood estimate (MLE) $\hat\beta$.
+
+The key point is that, regardless of the outcome distribution, the score function always looks like a **weighted sum of covariates multiplied by residuals**. What changes across models is:
+
+-   the **mean function** $\mu_i(\beta)$,\
+-   the **link function** $g(\cdot)$ that relates $\mu_i$ to the linear predictor $x_i^\top \beta$, and\
+-   the **variance function** $V_i$ associated with the distribution.
+
+$$
+cov(\hat{\beta}) = \left(\left[ \frac{\partial \mu(\beta)}{\partial \beta}\right]^T V(y; \beta)^{-1}\left[ \frac{\partial \mu(\beta)}{\partial \beta}\right]\right)^{-1}
+$$
+
+Below we illustrate this general form for three common GLMs: Normal regression, Logistic regression, and Poisson log-linear regression.
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## Normal Regression with Identity Link?
+
+Model: $y_{ij}=\eta_{ij}+\varepsilon_{ij}$, $\eta_{ij}=x_{ij}^\top\beta$, $g(\mu)=\mu$, $v(\mu)=1$, typically $\phi=\sigma^2$.
+
+Then $A_i=\phi I_{n_i}$, $D_i=X_i$, and $$
+U(\beta)=\sum_{i=1}^m X_i^\top V_i^{-1}(y_i-X_i\beta)=0,
+$$ which reduces to **GLS** for a chosen working $R(\alpha)$.
+:::
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## Logistic Regression with Logit Link
+
+Model: $y_{i} \sim \mathrm{Bernoulli}(p_{i})$ with\
+$$
+p_{i} = \frac{e^{x_{i}^\top \beta}}{1 + e^{x_{i}^\top \beta}}.
+$$
+
+For a single observation, the log-likelihood is $$
+\ell(\beta \mid y_{i}, x_{i})
+= y_{i} \log(p_{i}) + (1 - y_{i}) \log(1 - p_{i}).
+$$
+
+**Score (gradient) for a single observation:** $$
+U_{i}(\beta)
+= \frac{\partial \ell_{i}(\beta)}{\partial \beta}
+= x_{i}\,\big(y_{i}-p_{i}\big).
+$$
+
+**Stacked over all observations (independent case):** $$
+U(\beta)=\sum_{i=1}^n x_{i}\,\big(y_{i}-p_{i}\big)
+= X^\top (y-\mu),
+\quad \text{with } \mu_i=p_i.
+$$
+
+Therefore, the MLE $\hat\beta$ is obtained by solving $p$ equations in $p$ unknowns: $$
+\sum_{i=1}^n x_{ik}\,\Big(y_i - p_i(\beta)\Big) = 0,
+\qquad k=1,\dots,p,
+$$ or equivalently, $$
+\sum_{i=1}^n x_{ik}\,\left(y_i - \frac{e^{x_i^\top \beta}}{1 + e^{x_i^\top \beta}}\right) = 0,
+\qquad k=1,\dots,p.
+$$
+
+In compact matrix form the **estimating equation** is given by: $$
+X^\top\!\big(y-\mu(\beta)\big)=0.
+$$
+
+There is no closed-form solution; numerically one can use **Newton--Raphson** or **Iteratively Reweighted Least Squares (IRLS)**.
+:::
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## Poisson Log-Linear Regression with Log Link
+
+Model: $y_{i} \sim \mathrm{Poisson}(\mu_{i})$ with\
+$$
+\mu_{i} = e^{x_{i}^\top \beta}, \qquad g(\mu_i) = \log(\mu_i).
+$$
+
+For a single observation, the log-likelihood is $$
+\ell(\beta \mid y_{i}, x_{i})
+= y_{i}\,x_i^\top \beta - e^{x_i^\top \beta} - \log(y_i!).
+$$
+
+**Score (gradient) for a single observation:** $$
+U_{i}(\beta)
+= \frac{\partial \ell_{i}(\beta)}{\partial \beta}
+= x_{i}\,\big(y_{i}-\mu_{i}\big).
+$$
+
+**Stacked over all observations (independent case):** $$
+U(\beta)=\sum_{i=1}^n x_{i}\,\big(y_{i}-\mu_{i}\big)
+= X^\top (y-\mu),
+\quad \text{with } \mu_i = e^{x_i^\top \beta}.
+$$
+
+Therefore, the MLE $\hat\beta$ is obtained by solving $p$ equations in $p$ unknowns: $$
+\sum_{i=1}^n x_{ik}\,\Big(y_i - \mu_i(\beta)\Big) = 0,
+\qquad k=1,\dots,p,
+$$ or equivalently, $$
+\sum_{i=1}^n x_{ik}\,\Big(y_i - e^{x_i^\top \beta}\Big) = 0,
+\qquad k=1,\dots,p.
+$$
+
+In compact matrix form the **estimating equation** is given by: $$
+X^\top\!\big(y-\mu(\beta)\big)=0.
+$$
+
+There is no closed-form solution; numerically one can use **Newton--Raphson** or **Iteratively Reweighted Least Squares (IRLS)**.
+:::
+
+------------------------------------------------------------------------
+
+### Motivating Example: Coming back to the Crossover Design
+
+We come back to our crossover study:
+
+Data were obtained from a crossover trial on the disease of cerebrovascular deficiency. The goal is to investigate the side effects of a treatment drug compared to a placebo
+
+Design:
+
+-   34 patients: an active drug (A) and followed by placebo (B).
+
+-   33 patients: a placebo (B) followed by an active drug (A).
+
+-   Outcome: a normal (0) or abnormal (1) electrodiagram.
+
+-   Each patient has a binary observation at period 1 and period 2.
+
+-   Crossover design: can have "carryover" effects which confound treatment effect estimation. Test whether washout period was adequate.
+
+Variables:
+
+-   ID $i$: subject id
+
+-   period $j$: 0 = period 1, 1 = period 2.
+
+-   group: 0 = B then A, 1 = A then B
+
+-   outcome $y_{ij}$: 0 = normal ECG response; 1 = abnormal ECG response.
+
+-   trt: 0 = placebo, 1 = active drug.
+
+```{r, warning=F, messgae = F}
+library(dplyr)
+library(gee)
+library(lme4)
+
+data <- readRDS(paste0("data/crossover.RDS"))
+
+head(data)
+
+```
+
+We fit a marginal (population-average) logistic model for abnormal ECG as a function of treatment, period, and sequence, clustering on subject. The working correlation captures the within-subject dependence across the two periods; with two measurements per person, an exchangeable or AR(1) structure are both reasonable choices. Robust ("sandwich") standard errors ensure valid inference even if the working correlation is mis-specified.
+
+```{r, message = F, warning=F}
+
+#Marginal model with independent correlation
+fit_indep<- gee(
+  outcome ~ trt * period ,
+  id = ID, data = data,
+  family = binomial(link = "logit"),
+  corstr = "independence"
+)
+
+#Marginal model with exchangeable correlation
+fit_exch <- gee(
+  outcome ~ trt * period ,
+  id = ID, data = data,
+  family = binomial(link = "logit"),
+  corstr = "exchangeable"
+)
+
+#GLMM (CONDITIONAL) model with exchangeable correlation
+fit_glmm <- glmer(outcome ~ trt * period + (1|ID),
+                  data = data, family= binomial, nAGQ = 25)
+
+
+
+
+# summary(fit_indep)
+# summary(fit_exch)
+# summary(fit_glmm)
+```
+
+## Comparison of Models: Independence GEE, Exchangeable GEE, and GLMM
+
+| Term | GEE Indep. Estimate | Robust SE | GEE Exch. Estimate | Robust SE | GLMM Estimate | Std. Error |
+|----|----|----|----|----|----|----|
+| (Intercept) | -1.54 | 0.45 | -1.54 | 0.45 | -5.00 | 2.18 |
+| trt | 1.11 | 0.57 | 1.11 | 0.57 | 3.60 | 2.14 |
+| period | 0.85 | 0.58 | 0.85 | 0.58 | 2.79 | 2.04 |
+| trt:period | -1.02 | 0.98 | -1.02 | 0.98 | -3.34 | 3.30 |
+
+------------------------------------------------------------------------
+
+### Model Features
+
+| Feature | GEE Indep. | GEE Exch. | GLMM |
+|----|----|----|----|
+| Correlation Structure | Independence (ρ=0) | Exchangeable (ρ≈0.64) | Random intercept for ID |
+| Variance Estimator | Sandwich / robust | Sandwich / robust | Model-based (includes RE var.) |
+| Residual Correlation Model | None | Constant within cluster | Cluster-specific random effects |
+| Scale Parameter | 1.03 | 1.03 | Not used (variance from RE) |
+| Iterations | 1 | 1 | Adaptive Gauss-Hermite (nAGQ=25) |
+| Random Effects | — | — | Var(ID intercept)=24.4 (SD=4.94) |
+
+------------------------------------------------------------------------
+
+**Takeaway for teaching:**\
+- **GEE (indep.)**: same estimates as exchangeable here, robust SEs are nearly identical.\
+- **GEE (exch.)**: allows correlation within IDs; working correlation ≈ 0.64.\
+- **GLMM**: different paradigm — models subject-specific effects via random intercept; larger SEs due to extra variability.
+
+------------------------------------------------------------------------
+
+## `r colorize("Summary", "purple")`
+
+| **Section** | **Description** |
+|----|----|
+| **What is the model?** | **Generalized Estimating Equations (GEE)** extend GLMs to correlated outcomes (longitudinal or clustered). The mean structure is the same as a GLM: <br> $\mathbb{E}[y_{it}] = g^{-1}(x_{it}^\top \beta)$, <br> but estimation incorporates within-cluster correlation through a **working covariance matrix** $\mathbf{V}_i = \mathbf{A}_i^{1/2} R(\alpha)\mathbf{A}_i^{1/2}$. |
+| **Motivation** | Standard GLMs assume independent outcomes, which fails with repeated measures or clustering. GEE provides **population-averaged associations** while accounting for correlation. Even if the working correlation is misspecified, inference remains valid using robust (sandwich) SEs. |
+| **Estimating Equation** | $\hat{\beta}$ solves: <br> $U(\beta) = \sum_i D_i^\top V_i^{-1}(y_i - \mu_i) = 0$, <br> where $D_i = \partial \mu_i / \partial \beta^\top$. This generalizes the score equations from GLMs. |
+| **Working Correlation** | Choices include independence, exchangeable, AR(1), unstructured, etc. This structure improves **efficiency** if close to truth, but **robust SEs** protect inference if it is wrong. |
+| **Sandwich Variance** | $\widehat{\operatorname{Cov}}(\hat{\beta}) = B^{-1} M B^{-1}$, <br> where $B = \sum_i D_i^\top V_i^{-1} D_i$, and $M = \sum_i D_i^\top V_i^{-1}(y_i-\mu_i)(y_i-\mu_i)^\top V_i^{-1} D_i$. Provides valid SEs under misspecification. |
+| **Key Idea** | GEE does **not require a full likelihood**; it relies on estimating equations. <br> Efficiency comes from a good working correlation; validity comes from robust variance. |
+| **Interpretation** | **GEE coefficients**: average effect of covariates on the outcome across the population. <br> **Contrast with GLMM**: GEE = **marginal effects**; GLMM = **subject-specific effects**. |

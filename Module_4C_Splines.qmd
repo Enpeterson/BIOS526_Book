@@ -1,0 +1,568 @@
+# Module 4C Penalized Splines {.unnumbered}
+
+```{r, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color, x)
+  } else x
+}
+
+```
+
+![](fig/bsplines.png)
+
+### Motivation and Connection to 4B
+
+::: {.callout-important .illustration style="color: red"}
+## Motivation
+
+In Module 4B, we learned about parametric splines, where we fit piecewise polynomial segments joined at knots. These splines required us to choose both the number and location of the knots.
+
+If we choose too few knots, the fit is too rigid and misses local patterns (high bias). If we choose too many knots, the spline can overfit and capture random noise (high variance).
+
+Question: Is there a way to include many knots for flexibility but automatically control how wiggly the curve becomes?
+
+Answer: Yes --- by adding a penalty for roughness. This leads to penalized splines and smoothing splines.
+:::
+
+------------------------------------------------------------------------
+
+## Penalized Regression Framework: The Idea Behind Penalized Splines
+
+We begin with the regression model:
+
+$$
+y_i = g(x_i) + \varepsilon_i, \quad \varepsilon_i \sim N(0,\sigma^2)
+$$
+
+and approximate the unknown function $g(x)$ using a flexible basis representation with large fixed $K$ is `r colorize("unknown", "red")`.
+
+Instead of forcing $g(x)$ to have a specific parametric form, we approximate it using many basis functions:
+
+$$
+g(x) = \sum_{k=1}^K \beta_k b_k(x)
+$$ In Module 4B, we chose $K$ by deciding where to put knots. Here we take a different approach.
+
+The main idea is we start with a lot of knots. This ensures we will not miss important fine-scale behavior. Next, we assume most of the knots are not useful and `r colorize("shrink", "red")` their coefficients towards zero. We determine the amount of `r colorize("shrinkage", "red")` based on some criteria (.e.g, CV, GCV, AIC). Benefits of this approach:
+
+-   Knot placement is not important if the number if dense enough, but be cautious for overfitting.
+-   Shrinking most coefficients to zero will stabilize model estimation similar to performing variable selection.
+-   Data decide how much flexibility is needed.
+
+
+------------------------------------------------------------------------
+
+## Penalized Least Squares (PLS)
+
+*Intuition: Ordinary least squares minimizes the sum of squared residuals. Penalized least squares adds a second term that discourages unnecessary complexity in the fitted function.*
+
+To estimate $g(x)$ we minimize a `r colorize("penalized residual sum of squares", "blue")`:
+
+$$
+\text{PLS}(\lambda) = \sum_{i=1}^{n} (y_i - g(x_i))^2 + \underset{\text{roughness}}{\lambda J(g)},
+$$
+
+where:
+
+-   The first term measures fit to the data.
+-   The second term $J(g)$ measures the roughness of the function.
+-   $\lambda$ controls the tradeoff between fit and smoothness.
+
+::: callout-note
+Interpretation of $\lambda$:
+
+Small $\lambda$ → minimal penalty → curve follows data closely (wiggly fit).
+
+Large $\lambda$ → heavy penalty → smoother curve (may miss fine details).
+:::
+
+------------------------------------------------------------------------
+
+
+## Constrained vs. Penalized Form
+
+There are two equivalent ways to control how smooth the estimated function is: we can either place a hard limit on its wiggliness (constrained form) or penalize wiggliness directly in the objective function (penalty form).
+
+-   \(a\) Constrained Form:\
+    Minimize $\sum (y_i - g(x_i))^2$ subject to $J(g) \leq c$.
+
+Here we allow the curve to fit the data but restrict its total roughness, i.e., fit the data well, but don't let the function be too rough. The constant $c$ sets an upperbound on how wiggly $g(x)$ can be. This is computationally inconvenient.
+
+Equivalently,
+
+-   \(b\) Penalty Form:\
+    Minimize $\sum (y_i - g(x_i))^2 + \lambda J(g)$.
+
+Here, we trade off between fit and smoothness. The constant $\lambda$ acts as a Lagrange multiplier linked to constraint $c$, i.e., fit the data and smoothness simultaneously-balancing them through $\lambda$.
+
+
+------------
+
+## Examples of PLS Using Different Penalties
+
+Penalized Least Squares (PLS) can take different forms depending on what we choose to penalize
+
+I.  `r colorize("Ridge regression", "red")`- $J(g)$ penalizes the **size of the coefficients**.
+
+$$
+J(g) = \sum_{m=1}^M \beta_m^2 = ||\beta||_2^2 \leq C
+$$
+
+where $||\beta||_2$ is the L2-Norm and $C$ is a positive constant. Ridge regression using the $L2-$ penalty which does not induce sparsity because is does not set $\beta's$ exactly to 0.
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+#### L2 Definition
+
+The L2 norm, also called the Euclidean norm, is a measure of the magnitude (or length) of a vector in Euclidean space. It is defined as:
+
+$$
+\|\mathbf{v}\|_2 = \sqrt{v_1^2 + v_2^2 + \dots + v_n^2} = \sqrt{\sum_{i=1}^n v_i^2}
+$$
+
+where $\mathbf{v} = [v_1, v_2, \dots, v_n]$ is a vector in $\mathbb{R}^n$.
+
+The L2 norm is the square root of the sum of the squared elements of the vector.
+
+Properties:
+
+1\. Non-Negativity
+
+$$
+\|\mathbf{v}\|_2 \geq 0
+$$
+
+-   $\|\mathbf{v}\|_2 = 0$ if and only if $\mathbf{v} = 0$.
+
+2.  Scalability: If $c$ is a scalar:
+
+$$
+\|c \mathbf{v}\|_2 = |c| \cdot \|\mathbf{v}\|_2
+$$
+
+3.  Triangle Inequality: For two vectors $\mathbf{u}$ and $\mathbf{v}$:
+
+$$
+\|\mathbf{u} + \mathbf{v}\|_2 \leq \|\mathbf{u}\|_2 + \|\mathbf{v}\|_2
+$$
+
+4.  Geometric Interpretation: The L2 norm corresponds to the Euclidean distance from the origin to the point $\mathbf{v}$ in $n$-dimensional space. For a 2D vector $\mathbf{v} = [x, y]$, the L2 norm is:
+
+$$
+\|\mathbf{v}\|_2 = \sqrt{x^2 + y^2}
+$$
+
+This is the standard distance formula in 2D geometry.
+:::
+
+II. `r colorize("Lasso", "red")`- $J(g)$ penalizes the **size of the coefficients** using the $L_1$ norm.
+
+$$
+J(g) = \|\beta\|_1 \leq C,
+$$\
+where $\|\beta\|_1$ is the L1-Norm and $C$ is a positive constant.
+
+LASSO applies an $L1$ penalty, which encourages sparsity in the coefficients.\
+Unlike Ridge regression, Lasso can set some $\beta$'s exactly to 0, effectively performing variable selection while also regularizing the model.
+
+Mathematically, this corresponds to solving:
+
+$$
+\min_{\boldsymbol{\beta}} \sum_{i=1}^{n} (y_i - g(x_i))^2 + \lambda \sum_{m=1}^{M} |\beta_m|,
+$$
+
+where $\lambda$ controls the amount of shrinkage.
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+#### L1 Definition
+
+The L1 norm, also known as the Manhattan norm or taxicab norm, measures the total absolute magnitude of a vector. It is defined as:
+
+$$
+\|\mathbf{v}\|_1 = |v_1| + |v_2| + \dots + |v_n| = \sum_{i=1}^n |v_i|
+$$
+
+for a vector $\mathbf{v} = [v_1, v_2, \dots, v_n]$ in $\mathbb{R}^n$.
+
+Properties:
+
+1.  Non-Negativity:\
+    $$
+    \|\mathbf{v}\|_1 \geq 0, \quad \text{and } \|\mathbf{v}\|_1 = 0 \text{ iff } \mathbf{v} = 0.
+    $$
+
+2.  Scalability: For a scalar $c$:\
+    $$
+    \|c\mathbf{v}\|_1 = |c| \cdot \|\mathbf{v}\|_1
+    $$
+
+3.  Triangle Inequality: For any vectors $\mathbf{u}$ and $\mathbf{v}$:\
+    $$
+    \|\mathbf{u} + \mathbf{v}\|_1 \leq \|\mathbf{u}\|_1 + \|\mathbf{v}\|_1
+    $$
+
+4.  Geometric Interpretation:\
+    The L1 norm corresponds to the sum of absolute distances along each axis from the origin to the point $\mathbf{v}$.\
+    In 2D, this is the total "city-block distance" you'd travel along grid lines:\
+    $$
+    \|\mathbf{v}\|_1 = |x| + |y|
+    $$\
+    The L1 constraint region forms a diamond shape in 2D, which causes some coefficients to hit exactly zero---unlike the circular constraint region in Ridge regression.\
+:::
+
+`r colorize("Connection to Penalized Splines:", "blue")` Ridge and Lasso are both examples of the penalized least squares framework:
+
+$$
+\sum_i (y_i - g(x_i))^2 + \lambda J(g)
+$$ In these cases, $J(g)$ penalizes the [size of the coefficients]{.underline}.
+
+
+
+------------------------------------------------------------------------
+
+## PLS: Moving from Constraints to Penalties
+
+For `r colorize("Penalized Spline", "red")`, the same principle is used --- but $J(g)$ penalizes the *roughness of the function, rather than the size of the coefficients.* In other words, the penalty smooths the **entire fitted curve**, not just the individual coefficients.
+
+Mathematically, this is achieved y penalizing the integrated squared second derivative:\
+$$
+J(g) = \int [g''(x)]^2 dx
+$$ 
+
+
+This quantity measures how rapidly the function $g(x)$ bends or changes curvature (wiggliness). Large values of $J(g)$ indicate a very wiggly function, while smaller values correspond to smoother curves.\
+By adding $\lambda J(g)$ to our objective function, we control the trade-off between smoothness and fit.
+
+<!-- **Constrained Formulation**: We define the objective function as: -->
+
+<!-- $$ -->
+
+<!-- \text{argmin}_{\beta} \quad (Y - X\beta)'(Y - X\beta) \quad \text{subject to} \quad \beta'B\beta \leq C. -->
+
+<!-- $$ -->
+
+<!-- The term $(Y - X\beta)'(Y - X\beta)$ represents the **residual sum of squares (RSS)** or the **squared error term**. Measure of model fit. -->
+
+<!-- -   Smaller values indicate a better fit. -->
+
+<!-- -   Want to minimize RSS, i.e., find $\beta$ that makes the model predictions $X\beta$ close to observed $y$. -->
+
+<!-- **Constraint** : -->
+
+<!-- The constraint $\beta'B\beta \leq C$ imposes a penalty on the coefficients $\beta$: -->
+
+<!-- -   $\beta'B\beta$ is a **quadratic form**, where $B=$ a diagonal matrix with 0s and 1s. -->
+
+<!-- -   $B$ selects which coefficients are penalized: -->
+
+<!--     -   1 in $B$ means that the corresponding coefficient in this $\beta$ is penalized. -->
+
+<!--     -   0 in $B$ means the corresponding coefficient is **not penalized**. -->
+
+<!-- -   $C$ is a threshold that limits the total magnitude of the penalized coefficients. -->
+
+<!-- ## Penalty Formulation -->
+
+<!-- ::: {.callout-important style="color: red"} -->
+
+<!-- This problem can be equivalently formulated without constraint $C$ as -->
+
+<!-- $$ -->
+
+<!-- \text{argmin}_{\beta} \quad (Y - X\beta)'(Y - X\beta) + \overset{\text{penalty function}}{\lambda \beta'B\beta} -->
+
+<!-- $$ -->
+
+<!-- ::: -->
+
+<!-- There is a one-to-one mapping between $\lambda$ and the constraint $C$, i.e., for each $\lambda$ you can find a corresponding $C$. -->
+
+<!-- -   The **smoothing parameter**, $\lambda$, controls the trade-off between: -->
+
+<!--     -   Minimizing the residual sum of squares (fit to the data). -->
+
+<!--     -   Penalizing complexity of the model (regularization term $\beta'B\beta$). -->
+
+<!-- -   A larger value of $\lambda$ increases the penalty, resulting in a smoother (less complex) model. -->
+
+<!-- -   A smaller value of \$\lambda \$ allows more flexibility, potentially fitting the data more closely but risking overfitting. -->
+
+<!-- -   Why This Matters -->
+
+<!--     -   Constraint-based and penalty-based---are equivalent in theory but have different practical uses: -->
+
+<!--     -   Constraint-based Formulation: Useful for explicitly enforcing a limit on model complexity (e.g., in constrained optimization problems). -->
+
+<!--     -   Penalty-based Formulation: Easier to solve using standard optimization techniques and more common in regularization methods like Ridge Regression or Smoothing Splines. -->
+
+------------------------------------------------------------------------
+
+### Deriving the Penalized Spline Solution
+
+We now express the penalized spline problem in matrix form. This will show that the solution has the same algebraic form as ridge regression, even though the penalty targets curvature rather than coefficient size.
+
+
+Let $\mathbf{B}$ be the basis matrix (each column a basis function evaluated at all $x_i$), and let $\boldsymbol{\beta}$ be the corresponding coefficient vector. Then the PLS criterion can be written as
+
+$$
+\text{PLS}(\lambda) = (\mathbf{y} - \mathbf{B}\boldsymbol{\beta})'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta}) + \lambda \underbrace{\boldsymbol{\beta}'\mathbf{K}\boldsymbol{\beta}}_{J(g) = \int[g''(x)]^2dx},
+$$
+
+where $\mathbf{K}$ is a known penalty matrix that encodes curvature or "wiggliness" of the fitted function.Typically, $\mathbf{K}$ is derived from $\int b_k''(x)b_l''(x)dx$, so that large curvature is penalized.
+
+### [Derivation of the Closed-Form Solution]{.underline}
+
+#### *Optimization Problem*
+
+We seek to minimize the penalized least squares criterion:
+
+$$
+\underset{\boldsymbol{\beta}}{\text{minimize}} 
+\quad (\mathbf{y} - \mathbf{B}\boldsymbol{\beta})'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta})
++ \lambda\, \boldsymbol{\beta}'\mathbf{K}\boldsymbol{\beta}.
+$$
+
+#### 1. Differentiate with respect to $\boldsymbol{\beta}$
+
+$$
+-2\mathbf{B}'(\mathbf{y} - \mathbf{B}\boldsymbol{\beta}) + 2\lambda\mathbf{K}\boldsymbol{\beta} = 0.
+$$
+
+#### 2. Simplify
+
+$$
+\mathbf{B}'\mathbf{B}\boldsymbol{\beta} + \lambda\mathbf{K}\boldsymbol{\beta} = \mathbf{B}'\mathbf{y}.
+$$
+
+#### 3. Rearrange Terms
+
+$$
+(\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})\boldsymbol{\beta} = \mathbf{B}'\mathbf{y}.
+$$
+
+#### 4. Closed-Form (Ridge-Type) Solution
+
+$$
+\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'\mathbf{y}.
+$$
+
+#### Interpretation of $\lambda$
+
+-   $\lambda = 0$:\
+    The penalty disappears and $\hat{\boldsymbol{\beta}}$ reduces to the ordinary least squares (OLS) estimate.
+
+-   $\lambda \to \infty$:\
+    The penalty dominates; higher-order coefficients shrink toward zero, producing a smoother (even linear) function.
+
+-   **Intercept and linear terms (**$\beta_0$, $\beta_1$) are usually *not penalized*, allowing the fitted spline to capture the overall level and trend freely. \|
+
+------------------------------------------------------------------------
+
+## Fitting Penalized Splines in R
+
+Let's revisit our NYC daily mortality data. We can use a penalized spline on `date_num`:
+
+```{r, warning=F, message = F}
+library(splines)
+library(MASS)
+library(mgcv)
+# Load data
+load(file.path(getwd(), "data", "NYC.RData"))  # expects object `health`
+
+# Ensure date is numeric for bs(); keep original for labeling
+health$date_num <- as.numeric(health$date)
+
+
+# --- 1. Unpenalized spline (ordinary regression spline) ---
+fit_unpen <- lm(alldeaths ~ bs(date_num, df = 40), data = health)
+
+# --- 2. Penalized spline (penalized B-spline, ps basis) ---
+fit_pen <- gam(alldeaths ~ s(date_num, k = 40, #k=40 is defaulty
+                             bs = "ps"),
+                            data = health, 
+                            method = "GCV.Cp")
+
+# --- Plot comparison ---
+plot(health$date_num, health$alldeaths, pch = 16, cex = 0.6,
+     col = "gray50", main = "Penalized vs Unpenalized Splines",
+     xlab = "Date (numeric)", ylab = "All Deaths")
+
+# Add unpenalized spline fit (red, more wiggly)
+lines(health$date_num, fitted(fit_unpen), col = "red", lwd = 2)
+
+# Add penalized spline fit (blue, smoother)
+lines(health$date_num, fitted(fit_pen), col = "blue", lwd = 2)
+
+legend("topright", legend = c("Unpenalized (OLS spline, λ = 0)",
+                              "Penalized (GCV-selected λ)"),
+       col = c("red", "blue"), lwd = c(1.5, 3), lty = c(2, 1), bty = "n")
+```
+
+-   The **gray points** show daily (or observed) values of all deaths in NYC.\
+-   The **red curve** represents the *unpenalized spline fit*.
+    -   It follows the data very closely, producing a wiggly fit.
+    -   This corresponds to **λ = 0**, i.e., no smoothness penalty.
+    -   High flexibility → **low bias, high variance**.\
+-   The **blue curve** represents the *penalized spline fit*.
+    -   The penalty term discourages excessive curvature, yielding a smoother trend.
+    -   The model automatically chooses the optimal **λ** by REML (or GCV).
+    -   Moderate flexibility → **balanced bias--variance trade-off**.\
+-   The comparison shows that **penalization reduces random wiggles** while retaining major seasonal patterns. Conceptually, the penalty [shrinks]{.underline} the coefficients associated with high-order basis functions toward zero--- just as predicted by the **ridge-type matrix solution** $\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'\mathbf{y}$.
+
+::: {.callout-note appearance="minimal" icon="false"}
+So far, we've seen that $\lambda$ controls the trade-off between fit and smoothness: Small $\lambda$ → minimal penalty → very flexible (wiggly) curve. Large $\lambda$ → heavy penalty → smoother curve (possibly underfit). But how do we choose the "right" amount of smoothing? We need a method to balance goodness of fit and model complexity.
+:::
+
+------------------------------------------------------------------------
+
+## Choosing $\large{\lambda}$: Generalized Cross-Validation (GCV)
+
+The **smoothing parameter** $\lambda$ controls the trade-off between **fit** and **smoothness** (i.e., the bias--variance tradeoff). Choosing $\lambda$ too small leads to an overfitted, wiggly curve; choosing it too large leads to an oversmoothed, biased curve.
+
+You can think of it like the story of "Goldie-Locks and the three Bears":
+
+-   **Too little smoothing** (small $\lambda$) → the fit is *too rough* (high variance).\
+-   **Too much smoothing** (large $\lambda$) → the fit is *too flat* (high bias).\
+-   The *"just right"* $\lambda$ finds the balance between flexibility and stability.
+
+```{r, echo = F, warning = F, message = F}
+library(mgcv)
+
+# fits with fixed λ (sp)
+fits <- list(
+  gam(alldeaths ~ s(date_num, k = 40, bs = "ps", sp = 1e-6),
+      data = health, method = "REML"),
+  gam(alldeaths ~ s(date_num, k = 40, bs = "ps", sp = 5),
+      data = health, method = "REML"),
+  gam(alldeaths ~ s(date_num, k = 40, bs = "ps", sp = 20),
+      data = health, method = "REML")
+)
+
+cols <- c("red", "blue", "green")
+
+# sort x for smooth lines
+o <- order(health$date_num)
+x <- health$date_num[o]
+y <- health$alldeaths[o]
+
+plot(x, y, pch = 16, col = "gray60",
+     main = "Effect of λ on Smoothness",
+     xlab = "Date (numeric)", ylab = "All Deaths")
+
+# add fitted lines
+for (i in 1:3) {
+  lines(x, fitted(fits[[i]])[o], col = cols[i], lwd = 2)
+}
+
+# extract edf for each smooth
+edf_lab <- vapply(fits, function(f) {
+  # first smooth’s edf; round for display
+  round(summary(f)$s.table[1, "edf"], 1)
+}, numeric(1))
+
+legend("topright",
+       legend = c(
+         paste0("λ = 1e-6 (wiggly), edf = ", edf_lab[1]),
+         paste0("λ = 5 (moderate), edf = ", edf_lab[2]),
+         paste0("λ = 20 (smooth), edf = ", edf_lab[3])
+       ),
+       col = cols, lwd = 2, bty = "n")
+
+```
+
+To select $\lambda$, we can minimize the Generalized Cross-Validation **GCV criterion**, a computational shortcut to LOO validation:
+
+$$
+\text{GCV}(\lambda) = \frac{\frac{1}{n}\sum_i (y_i - \hat{y}_i)^2}{[1 - \text{trace}(\mathbf{S}_\lambda)/n]^2} 
+$$
+
+where $\mathbf{S}_\lambda = \mathbf{B}(\mathbf{B}'\mathbf{B} + \lambda \mathbf{K})^{-1}\mathbf{B}'$ is the **smoother matrix**.
+
+The smoother matrix $\mathbf{S}_\lambda$ maps $\mathbf{y}$ to its fitted values:
+
+$$
+\hat{\mathbf{y}} = \mathbf{S}_\lambda \mathbf{y}.
+$$
+
+The **effective degrees of freedom** are defined as:
+
+$$
+\text{edf} = \text{trace}(\mathbf{S}_\lambda).
+$$
+
+-   Small $\lambda$ → edf ≈ number of parameters (flexible fit).\
+-   Large $\lambda$ → edf ≈ 2 (approaches a line).
+
+`r colorize("edf quantifies the model’s effective flexibility—how many 'free bends' the spline is allowed to have.", "blue")`
+
+
+
+-   The numerator is the mean squared error (avg lack of fit).
+-   The denominator corrects for model complexity (effective degrees of freedom).
+-   $\lambda$ that minimizes the GCV achieves the "just right" fit.
+
+`r colorize("GCV provides an automatic, data-driven way to select the smoothness level.", "blue")`
+
+
+
+------------------------------------------------------------------------
+
+## Coming Back to Our Model Findings
+
+Now that we understand how **GCV** selects the smoothing parameter and how the **effective degrees of freedom (edf)** quantify smoothness, we can interpret our fitted penalized spline model:
+
+```{r}
+summary(fit_pen)
+```
+
+**Model Interpretation**
+
+-   The model was fit using **(GCV)** to choose the optimal smoothing parameter $\lambda$.\
+    GCV automatically balances model fit and smoothness.The **GCV score = 175.5** and estimated **scale = 171.9** quantify residual variability and model adequacy.
+
+-   The estimated smooth term `s(date_num)` has\
+    **effective degrees of freedom (edf) = 36.48** (out of 40 possible), meaning the fitted curve is fairly flexible but still penalized to avoid overfitting.
+
+-   The smooth term is **highly significant** (*F = 36.83, p \< 2 × 10⁻¹⁶*), indicating a strong nonlinear temporal pattern in daily deaths.
+
+-   The **intercept = 143.9** represents the estimated average number of deaths (baseline level) after centering effects.
+
+-   The model explains about **44 % of the total variability** in the outcome\
+    (*Deviance explained = 44 %, R²₍adj₎ = 0.43*), which is typical for real-world time-series mortality data.
+
+------------------------------------------------------------------------
+
+## Smoothing Splines (Limiting Case, Conceptual Connection)
+
+A **smoothing spline** is a special case of the penalized spline where we place a knot at every unique $x_i$ but penalize curvature to prevent overfitting. The estimation problem becomes:
+
+$$
+\min_g \sum_{i=1}^{n} (y_i - g(x_i))^2 + \lambda \int [g''(x)]^2 dx,
+$$
+
+where $\lambda$ controls the trade-off between fidelity to the data and smoothness of the curve.
+
+-   Small $\lambda$ → the curve follows the data closely (wiggly).\
+-   Large $\lambda$ → the curve becomes smoother, approaching a straight line.
+
+The solution $g(x)$ can be shown (via calculus of variations) to be a **natural cubic spline** with knots at all unique $x_i$.\
+In practice, smoothing splines are conceptually elegant but computationally intensive for large $n$, so **penalized B-splines (P-splines)** are preferred in most applications.
+
+`r colorize("Smoothing splines illustrate the extreme limit of penalized splines—maximal flexibility regulated entirely by λ.", "blue")`
+
+------------------------------------------------------------------------
+
+## `r colorize("Summary", "purple")`
+
+| **Section** | **Description** |
+|:------------------|:----------------------------------------------------|
+| **Penalized Regression Framework** | Estimates $g(x)$ by minimizing the *penalized least squares criterion*: $$\text{PLS}(\lambda) = \sum_{i=1}^{n}(y_i - g(x_i))^2 + \lambda J(g).$$ The first term measures goodness of fit; the second penalizes roughness. |
+| **Matrix Formulation** | In matrix form, the ridge-type estimator is $$\hat{\boldsymbol{\beta}} = (\mathbf{B}'\mathbf{B} + \lambda \mathbf{K})^{-1}\mathbf{B}'\mathbf{y}.$$ Penalization shrinks coefficients associated with high curvature toward zero. |
+| **Penalty Matrix** $\mathbf{K}$ | Encodes curvature or "wiggliness" through $$K_{kl} = \int b_k''(x)b_l''(x)\,dx.$$ Large curvature implies larger penalty and smoother estimated functions. |
+| **Smoothing Parameter** $\lambda$ | Controls the *bias--variance tradeoff*: <br> Small $\lambda$ → wiggly, flexible fit (low bias, high variance). <br> Large $\lambda$ → smooth, stable fit (high bias, low variance). |
+| **Smoother Matrix** $\mathbf{S}_\lambda$ | Maps observed values to fitted values: $$\hat{\mathbf{y}} = \mathbf{S}_\lambda \mathbf{y}, \quad \mathbf{S}_\lambda = \mathbf{B}(\mathbf{B}'\mathbf{B} + \lambda\mathbf{K})^{-1}\mathbf{B}'.$$ Captures how each observation influences its own fitted value. |
+| **Effective Degrees of Freedom (edf)** | Measures model flexibility: $$\text{edf} = \text{trace}(\mathbf{S}_\lambda).$$ Small $\lambda$ → large edf (many bends); large $\lambda$ → small edf (smoother curve). |
+| **Choosing** $\lambda$: GCV Criterion | The optimal $\lambda$ is chosen by minimizing the **Generalized Cross-Validation (GCV)** statistic: $$\text{GCV}(\lambda) = \frac{\frac{1}{n}\sum_i (y_i - \hat{y}_i)^2}{\left[1 - \frac{\text{trace}(\mathbf{S}_\lambda)}{n}\right]^2}.$$ Provides a data-driven balance between fit and smoothness. |
+| **Smoothing Spline (Limit Case)** | When knots are placed at every unique $x_i$, the penalized spline becomes a **smoothing spline**: $$\min_g \sum_i (y_i - g(x_i))^2 + \lambda \int [g''(x)]^2 dx.$$ Produces a globally smooth curve that still adapts to local structure. |
+| **Interpretation** | Penalized splines emphasize the *shape* of $g(x)$ rather than individual coefficients. The smoothing parameter $\lambda$ controls how smooth or wiggly the estimated function is. |

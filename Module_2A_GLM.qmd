@@ -1,0 +1,562 @@
+# Module 2A Generalized Linear Models {.unnumbered}
+
+```{r, hide =T, echo=F}
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+```
+
+![](fig/glm.jpeg)
+
+**Reading**
+
+-   Chapter 3, Wood S. Generalized Additive Models, 2017. Has a nice self-contained introduction to generalized linear models.
+-   Gelman & Hill. Data Analysis using Regression and Multilevel/Hierarchical Models.2006.
+
+### **Overview**
+
+In this module, you will learn **generalized linear models (GLMs)**, a flexible extension of linear regression that allows for modeling response variables with error distributions other than the normal distribution.
+
+**After completing this module, you will be able to:**
+
+-   Explain components of GLMs (link functions, linear predictor, and error distribution)
+
+-   Fit and interpret logistic and Poisson regression models.
+
+-   Calculate and interpret odds ratios and rate ratios.
+
+-   Perform hypothesis testing using Wald and likelihood ratio tests.
+
+### Motivation and Examples
+
+::: {.callout-important .illustration style="color: red"}
+## Motivation:
+
+If the outcome variable does not follow a normal distribution, alternative regression methods, such as generalized linear models, are required.
+
+-   **Bernoulli/Binomial:** Binary outcomes (0/1) or counts of successes out of a fixed number of trials.
+-   **Poisson data:** Count data representing the number of events occurring over a fixed time, area, or rate.
+
+Treating these as continuous outcomes can lead to biased estimates, incorrect standard errors, and invalid inference because the underlying distributional assumptions of linear regression are violated.
+:::
+
+**Motivating Example: Preterm Births Data**
+
+The dataset: a cohort of live births from Georgia born in the year 2001 $N = (77,340)$.
+
+Variables:
+
+-   ptb: indicator for whether a baby from pregnancy $i$ was born preterm (\<37 weeks).
+
+-   age: the mother's age at delivery (centered at age 25).
+
+-   male: indicator of the baby's sex (1=male, 0=female)
+
+-   tobacco: indicator for mother's tobacco use during pregnancy (1= yes, 0 = no).
+
+Tobacco is treated as the exposure variables. Mothers age is a covariate.
+
+```{r}
+load("/Users/emilypeterson/Library/CloudStorage/OneDrive-EmoryUniversity/BIOS 526/BIOS526_Book/data/PTB.Rdata")
+head(dat)
+```
+
+```{r, message = F, warning = F, echo=F}
+library(ggplot2)
+library(dplyr)
+library(gridExtra) 
+
+dat_summary <- dat %>%
+  group_by(tobacco) %>%
+  summarize(prop_y = mean(ptb), .groups = "drop")
+
+ggplot(dat_summary, aes(x = factor(tobacco), y = prop_y)) +
+  geom_col(fill = "steelblue") +
+  labs(x = "Tobacco Use (0 = No, 1 = Yes)",
+       y = "Proportion of Preterm Births",
+       title = "Proportion of Outcome by Tobacco Use") +
+  theme_minimal()
+
+```
+
+------------------------------------------------------------------------
+
+#### Why Not linear regression? [**The wrong approach**]{.underline}
+
+Consider the following multiple linear regression model: For $i=1, ..., n$.
+
+$$
+  y_i = \beta_0 + \sum_{k=1}^K \beta_k x_{ik} + \epsilon_i \qquad e_i \overset{iid}{\sim} N(0, \sigma^2)
+$$
+
+This is equivalent to $y_i \sim N(\beta_0 + \sum_{k=1}^K \beta_k x_{ik} , \sigma^2)$ where $x_{ik}$ is the $k^{th}$ linear predictor for observation $i$.
+
+Reminder of the assumptions of the above model:
+
+-   The $\beta's$ are fixed unknown constants.
+-   $y$ is a linear function of the covariates.
+-   The expectation of the errors $e's$ is zero.
+-   Only $\epsilon's$ are random.
+
+Therefore, $y_i$ follows a normal distribution and the $E(y_i|x_i) = \beta_0 + \sum_{k=1}^K \beta_k x_{ik}$. The linear regression part is used to model the **mean function** of $y_i$. The assumptions do not hold for other kinds of data, i.e, binary, count data, etc.
+
+------------------------------------------------------------------------
+
+### [The Better Approach: Generalized Linear Regression]{.underline}
+
+A generalized linear model (GLM) extends the linear regression to other distributions, where the response variable is generated from a distribution in the [exponential family.]{.underline}
+
+GLMs provide this flexibility by extending linear regression to a broader set of distributions---specifically, those that belong to the **exponential family**. The exponential family is mathematically convenient because it allows for a :
+
+-   A natural way to link the mean of the response to the linear predictors via a link function.
+-   Simple expressions for the mean and variance, which are essential for estimation and inference.
+-   Unified estimation procedures (e.g., MLE).
+
+A GLM involves three ingredients:
+
+1.  A probability distribution in the Exponential Family.
+
+2.  A linear model $x_i'\beta$.
+
+3.  A [link function]{.underline} $g()$ and its inverse $g^{-1}()$ is the link that relates the linear model to the expectation, i.e., transforms the mean function to meet the linear model assumptions.
+
+    $$
+    \begin{align*}
+    E(y_i|x_i) & = \mu_i = g^{-1} (x_i\beta)\\
+    Var(y_i|x_i) & = V(\mu_i) =V(g^{-1}(x_i\beta))
+    \end{align*}
+    $$
+
+4.  Note: Unlike OLS, the basic form of the GLM does not involve a noise variance [(no $\sigma^2$).]{.underline}
+
+------------------------------------------------------------------------
+
+## Exponential Family
+
+::: {.callout-note .illustration style="color: blue" appearance="minimal" icon="false"}
+The basic form for an exponential family density is
+
+$$
+f_{\theta} (y) = exp[\{y\theta - b(\theta)\} / a(\phi) + c(y, \phi )]
+$$
+
+where $a, b, c$ are known functions, and $\phi$ is a known scale parameter. The ONLY parameter is $\theta$.
+:::
+
+In the GLM, $\theta$ will be a function of $x_i\beta$.
+
+Examples of distributions in the exponential family include: normal with known variance (link = identity), Bernoulli (link = logit or probit), binomial (link = logit or log), gamma, exponential (link = negative inverse), and others.
+
+The table below summarizes the three most common GLM families side by side:
+
+| | **Normal** | **Bernoulli/Binomial** | **Poisson** |
+|---|---|---|---|
+| Natural param $\theta$ | $\mu$ | $\log\!\frac{p}{1-p}$ | $\log\lambda$ |
+| $b(\theta)$ | $\theta^2/2$ | $n\log(1+e^\theta)$ | $e^\theta$ |
+| Canonical link $g(\mu)$ | identity | logit | log |
+| $E(Y)$ | $\mu$ | $np$ | $\lambda$ |
+| $\text{Var}(Y)$ | $\sigma^2$ | $np(1-p)$ | $\lambda$ |
+| Use when | continuous, symmetric | binary / bounded counts | unbounded counts / rates |
+
+Lets derive a general class for the exponential function. *Use the expandable panels below to explore key statistical properties and their derivations.*
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## The Binomial Distribution
+
+1.  The Binomial distribution with parameters $n$ and $p$ is:
+
+$$f(y \mid p) = \binom{n}{y} p^y (1-p)^{n-y},$$
+
+which can be expressed in the exponential family form:
+
+$$f(y \mid \theta) = \exp \left[ y \theta - b(\theta) + c(y) \right], $$ where $$\theta = \log \left( \frac{p}{1-p} \right), \quad b(\theta) = n \log (1 + e^{\theta}), \quad c(y) = \log \binom{n}{y}. $$
+
+The mean and variance are: $$ E[Y] = np, \qquad \text{Var}(Y) = np(1-p). $$
+
+**Why the logit is the canonical link:** $\theta = \log\!\frac{p}{1-p}$ falls directly out of matching the Binomial density to the exponential family form — it is not a modeling choice. Verify using $E(Y) = b'(\theta)$:
+$$
+b'(\theta) = \frac{d}{d\theta}\, n\log(1+e^\theta) = \frac{ne^\theta}{1+e^\theta} = np \ \checkmark
+$$
+and $\text{Var}(Y) = b''(\theta) \cdot a(\phi)$:
+$$
+b''(\theta) = \frac{ne^\theta}{(1+e^\theta)^2} = np(1-p) \ \checkmark
+$$
+:::
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## The Poisson Distribution
+
+The Poisson distribution with parameter $\lambda > 0$ is:
+
+$$f(y \mid \lambda) = \frac{\lambda^y e^{-\lambda}}{y!}, $$
+
+which can be expressed in the exponential family form:
+
+$$f(y \mid \theta) = \exp \left[ y \theta - b(\theta) + c(y) \right], $$ where $$\theta = \log (\lambda), \quad b(\theta) = e^{\theta}, \quad c(y) = - \log (y!). $$
+
+The mean and variance are: $$E[Y] = \lambda, \qquad \text{Var}(Y) = \lambda. $$
+:::
+
+::: {.callout-tip collapse="true" style="color:gray" appearance="minimal" icon="false"}
+## The Gamma Distribution
+
+3.  The Gamma distribution (shape $k$, scale $\phi$) has the density:
+
+$$f(y \mid k, \phi) = \frac{1}{\Gamma(k) \phi^k} y^{k-1} e^{-y/\phi}, \quad y > 0. $$
+
+It can be expressed in the exponential family form:
+
+$$f(y \mid \theta) = \exp \left[ \frac{y \theta - b(\theta)}{a(\phi)} + c(y, \phi) \right], $$ where $$ \theta = -\frac{1}{k\phi}, \quad b(\theta) = - \log (-\theta), \quad a(\phi) = \frac{1}{k}, \quad c(y, \phi) = (k-1)\log y - \log \Gamma(k). $$
+
+The mean and variance are: $$E[Y] = k \phi, \qquad \text{Var}(Y) = k \phi^2. $$
+:::
+
+------------------------------------------------------------------------
+
+## Logistic Regression
+
+#### Bernoulli Model
+
+Let's take a binary outcome where $p_i$ is the probability of success. For $i=1,...,n$ assume
+
+$$ 
+y_i \sim Bernoulli (p_i)
+$$
+
+where $p_i \in (0,1)$ and the Bernoulli function has the following characteristics:
+
+$$
+\begin{align*}
+E(y_i) & = p_i\\
+Var(y_i) & =V(p_i) = p_i (1- p_i)\\
+f(y_i|p_i) & = p_i ^{y_i} (1-p_i)^{1-y_i}
+\end{align*}
+$$
+
+------------------------------------------------------------------------
+
+#### Link Functions
+
+We know that $\mu_i = p_i = P(Y_i=1)$. So we wish to model a **link function** $g()$ that **enforces a linear relationship** between the unscaled expectation $\mu_i$ and the expectation $\beta_0 + \sum_{k=1}^K \beta_k x_{ik}$, i.e, we wish to model
+
+$$
+g(\mu_i) = \beta_0 + \sum_{k=1}^K \beta_k x_{ik}
+$$
+
+The two most commonly used link functions for binomial data are the logit and probit functions.
+
+[The **link function** should have some desirable properties:]{.underline}
+
+1.  $g()$ should have a range $(-\infty, \infty)$ so that $\beta's$ and $X's$ can have any value.
+2.  $g()$ should have a domain that corresponds to all possible values of $\mu_i$, i.e., $(0,1)$ for the binomial distribution.
+3.  $g()$ should be one-to-one $\mu_i = g^{-1}(\beta_0 + \sum_k \beta_k X_{ik})$.
+4.  $g()$ should be strictly increasing, i.e., $g(p_i) \rightarrow \infty$ when $p_i \rightarrow 1$.
+
+------------------------------------------------------------------------
+
+#### Logit Link & Logistic Function
+
+The logit link function is defined as:
+
+$$
+g(p_i) = log\left(\frac{p_i}{1-p_i}\right) = \beta_0 + \sum_k \beta_k X_{ik}, \qquad (0,1) \rightarrow (-\infty, \infty)
+$$
+
+Meaning $log(p_i/1-p_i) \rightarrow -\infty$ when $p_i \rightarrow 0$ and $log(p_i/1-p_i)\rightarrow \infty$ when $p_i \rightarrow 1$.
+
+In general the logistic function is defined as :
+
+$$
+p_i = \frac{e^{g(\mu_i)}}{1 + e^{g(\mu_i)}} = \frac{1}{1+ e^{-g(\mu_i)}}, \qquad (-\infty, \infty) \rightarrow (0,1)
+$$
+
+-   The $\beta's$ are estimated using the iterative re-weighted MLE method.
+
+-   There is no $\epsilon_i$!!! Meaning the variance is not defined by a normally distributed noise term.
+
+-   $g(p_i)$ is interpreted as the [log_odds of probability of success.]{.underline}
+
+------------------------------------------------------------------------
+
+#### Interpretation
+
+When $X_i=0$, $log(\frac{p_i}{1-p_i}) = \beta_0$ which is interpreted as the baseline or reference log-odds of probability.
+
+$\beta_1$ is interpreted as the CHANGE in log-odds per one unit change in $X_i$. Conversely, $e^{\beta_1}$ is defines the odds-ratio.
+
+$$
+log(\frac{p_i}{1-p_i}) = \beta_0 + \beta_1 x_i, \text{ versus } log(\frac{p^*_i}{1-p^*_i}) = \beta_0 + \beta_1 (x_i + 1)
+$$
+
+then
+
+$$
+log\left(\frac{p^*_i/(1-p^*_i)}{p_i/(1-p_i)}\right) = \beta_1
+$$
+
+::: {.callout-note style="color: black" appearance="simple" icon="false"}
+**Key property:** $e^{\beta_1}$ does not depend on $x_i$ — the odds ratio is **constant** across all baseline values of $X$. This is the **proportional odds** property of the logistic model.
+:::
+
+In the multiple logistic regression, $\beta_k$ is the log odds ratio associated with covariate $k$ while controlling for other covariates.
+
+------------------------------------------------------------------------
+
+#### Odds Ratio & Indicator Variables
+
+Odds Ratio interpretation is helpful for indicator variables. Let $x_i=1$ in exposed group and $x_i=0$ in unexposed group. Then:
+
+$$
+e^{\beta_1} = \frac{\{\frac{p(y_i=1|x_i=1)}{p(y_i=0|x_i=1)}\}}{\frac{p(y_i=1|x_i=0)}{p(y_i=0|x_i=0)}\}} = \frac{\text{odds(Exposed)}}{\text{odds(Unexposed)}}
+$$
+
+-   OR\>1 means a positive association
+
+-   OR\<1 means a negative association
+
+-   OR=1 means no difference between exposure groups.
+
+It is really important to understand that the change in log-odds per one unit change in $X_i$ is not constant, i.e, that change in log-odds depends on the value of $X_i$.
+
+```{r}
+#The Logit Function
+p.i <- seq(0, 1, by = 0.001)
+g_p.i <- log(p.i/(1-p.i))
+plot(p.i, g_p.i, col = "red", xlab ="p", ylab = "Logit Function")
+
+#The Logistic Function
+p_i <- exp(g_p.i)/(1+exp(g_p.i))
+plot(g_p.i, p_i, col = "blue", xlab = "x", ylab = "Logistic Function")
+```
+
+What are the effects of changing the baseline odds?
+
+$$
+\begin{align}
+logit(p_i)& = \beta_0 + x_i\\
+\mu_i = P(Y_i =1) &= \frac{e^{\beta_0 + x_i}}{1 + e^{\beta_0 + x_i}}
+\end{align}
+$$
+
+```{r, echo=F}
+x <- seq(-10, 10, by = 0.1)
+beta0 = 0
+beta0.1 = 2
+beta0.2 = -2
+beta0.3 = -3
+beta0.4 = 3
+mu_i = exp(beta0 + x)/(1 + exp(beta0 + x))
+mu_i.1 = exp(beta0.1 + x)/(1 + exp(beta0.1 + x))
+mu_i.2 = exp(beta0.2 + x)/(1 + exp(beta0.2 + x))
+mu_i.3 = exp(beta0.3 + x)/(1 + exp(beta0.3 + x))
+mu_i.4 = exp(beta0.4 + x)/(1 + exp(beta0.4 + x))
+
+plot(x, mu_i, col = "black", xlab = "x", ylab = "mu", type= "l")
+lines(x, mu_i.1, col = "red")
+lines(x, mu_i.2, col = "blue")
+lines(x, mu_i.3, col = "green")
+lines(x, mu_i.4, col = "orange")
+abline(v=0)
+legend("bottomright", legend=c("beta0 = 0", "beta0 = 2", "beta0 = -2", "beta0 = -3", "beta0 = 3"), col=c("black", "red", "blue", "green", "orange"), lty=c(1,1,1,1,1), cex=0.7)
+
+```
+
+Note: The shape is maintained, and the baseline (intercept) probability changes.
+
+What are the effects of the change in slope?
+
+$$
+\begin{align}
+logit(p_i)& = \beta_1 x_i\\
+\mu_i = P(Y_i =1) = \frac{e^{\beta_1 x_i}}{1 + e^{\beta_1 x_i}}
+\end{align}
+$$
+
+```{r, echo=F}
+x <- seq(-10, 10, by = 0.1)
+beta1 = 0
+beta1.1 = 1
+beta1.2 = 2
+beta1.3 = -1
+beta1.4 = -2
+mu_i = exp(beta1 *x)/(1 + exp(beta1*x))
+mu_i.1 = exp(beta1.1 * x)/(1 + exp(beta1.1 * x))
+mu_i.2 = exp(beta1.2 * x)/(1 + exp(beta1.2 * x))
+mu_i.3 = exp(beta1.3 * x)/(1 + exp(beta1.3 * x))
+mu_i.4 = exp(beta1.4 * x)/(1 + exp(beta1.4 * x))
+
+plot(x, mu_i, col = "black", xlab = "x", ylab = "mu", type= "l", ylim = c(0, 1))
+lines(x, mu_i.1, col = "red")
+lines(x, mu_i.2, col = "blue")
+lines(x, mu_i.3, col = "green")
+lines(x, mu_i.4, col = "orange")
+abline(h=0)
+legend("bottomright", legend=c("beta1 = 0", "beta1 = 1", "beta1 = 2", "beta1 = -1", "beta1 = -2"), col=c("black", "red", "blue", "green", "orange"), lty=c(1,1,1,1,1), cex=0.7)
+```
+
+Note how the steepness changes with difference in slopes. Also note how the direction changes depending on the effect changes.
+
+------------------------------------------------------------------------
+
+#### Fitting a logistic regression in R
+
+We come back to our motivating example using data on preterm births in Georgia (2001).
+
+Fitting the GLM model in R is very similar to fitting a linear regression model. We need to specify the distribution as `r colorize("binomial", "blue")`and the link function as `r colorize("logit", "blue")`.
+
+```{r}
+
+### The GLM Function
+
+load("/Users/emilypeterson/Library/CloudStorage/OneDrive-EmoryUniversity/BIOS 526/BIOS526_Book/data/PTB.Rdata")
+
+fit <- glm(formula = ptb ~ age + male + tobacco, 
+    family = binomial(link = "logit"),
+    data = dat)
+
+summary(fit)
+```
+
+**Model Interpretation**
+
+-   Preterm delivery was significantly associated with male babies (p-value = 0.005) when controlling for age and mother's smoking status. The [odds ratio]{.underline} of a preterm birth for a male baby versus a female baby was 1.07 (95% CI: 1.02, 1.13).
+
+-   $OR = e^{0.0723} = 1.07$ with 95% CI = (1.02, 1.13).
+
+    -   How we get CIs: $e^{(0.0723 \pm 1.96 * 0.0258)}$.
+
+        NOTE: TRANSFORM THE INTERVALS. DO NOT TRANSFORM THE STANDARD ERRORS (this requires the delta method).
+
+-   Preterm delivery was significantly associated with whether the mother smoked during pregnancy (p\<0.001) when controlling for age and the baby's sex.
+
+-   $OR = e^{0.409} = 1.51 (1.36, 1.67)$.
+
+-   The baseline proportion (female babies born to mother of age 25 who didn't smoke) of preterm delivery was
+
+    $$
+    \frac{e^{-2.42}}{1 + e^{-2.42}} = 0.08.
+    $$
+
+-   We didn't find an effect of mother's age.
+
+------------------------------------------------------------------------
+
+#### Wald Test
+
+The **Wald Test** evaluates the significance of individual regression coefficients directly by comparing the estimated coefficient to its standard error. The Wald Test relied on the fact that MLEs of the coefficients are approximately normally distributed for large samples (Central Limit Theorem).
+
+::: {.callout-note .illustration style="color: blue" appearance="minimal" icon="false"}
+Wald test under regularity conditions and assuming asymptotic results,
+
+$$
+\begin{align}
+\hat{\beta} &\sim N(\beta, I(\beta)^{-1})\\
+I(\beta) &= E\left\{\left(\frac{\partial l}{\partial \beta}\right)\left(\frac{\partial l}{\partial \beta}\right)'\right\}\\
+&= -E\frac{\partial^2 l}{\partial \beta \partial \beta'}
+\end{align}
+$$
+
+-   $I(\beta)$ is called the Fisher information matrix (see Wood p.106). The standard error of $\hat{\beta}$ is derived from $I(\beta)^{-1}$.
+
+-   The Wald test uses the standardized statistic: $$
+    Z = \frac{\hat{\beta}_i}{s.e.(\hat{\beta}_i)}
+    $$
+:::
+
+-   The $Z-$ column is calculated as $z = \frac{\hat{\beta}_i}{SE(\hat{\beta}_i)}$.
+
+-   The p-values are derived from the z-statistic $H_0 : \beta_i = 0$. For example, for \textt{male}, $z \approx 2.798$ with $p=0.005$ indicating male babies are significantly associated with preterm birth holding other variables constant.
+
+------------------------------------------------------------------------
+
+#### Likelihood Ratio Test
+
+In logistic regression, we use the Likelihood Ratio Test to determine whether adding predictors significantly improves model fit, since standard F-tests from linear regression do not apply. The Likelihood Ratio Test (LRT) provides a natural way to compare nested models by examining how much better the full model fits the data compared to a reduced model (with some parameters set to zero): `r colorize("How can we test whether which model is better?", "blue")`
+
+The likelihood ratio test (LRT) is used to test the null hypothesis that any subset of the $\beta's$ is equal to 0. The number of $\beta's$ in the full model is $k+1$, while the number of $\beta's$ in the reduced model is $r+1$. (Remember the reduced model is the model that results when the $\beta's$ in the null hypothesis are set to 0). Thus, the number of $\beta's$ being tested in the null hypothesis is $(k+1) - (r+1) = k-r$.
+
+::: {.callout-note .illustration style="color: blue" appearance="minimal" icon="false"}
+The Likelihood Ratio Test is given by:
+
+$$
+LR= \frac{max_{H_0}L(\beta)}{max_{H_A}L(\beta)}
+$$ This gives the ratio of the likelihood of the null model evaluated at the MLEs to the likelihood of the full model evaluated at the MLEs.
+
+-   In the normal case, this is the analogous to the F-test described in Chapter 1.
+
+The likelihood ratio test statistic is given by:
+
+$$
+\lambda_{LR} = -2[l(\hat{\beta}_{reduced}) - l(\hat{\beta}_{full})]
+$$
+
+-   The difference follows a Chi-square distribution, i.e.,
+
+    $$
+    \lambda_{LR} > \chi^2_{\nu, 1-\alpha}
+    $$
+
+where $\nu$ denotes the different in number of parameters, i.e., $k-r$ = degrees of freedom.
+:::
+
+The likelihood for a binary logistic regression is given by:
+
+$$
+L(\beta; \mathbf{y}, \mathbf{X}) = \prod_{i=1}^{n} \pi_i^{y_i} (1-\pi_i)^{1-y_i}
+$$
+
+This yields a log-likelihood of:
+
+$$
+\begin{align*}
+l(\beta) &= \sum_{i=1}^n [y_i log(\pi_i)  + (1-y_i) log(1-\pi_i)\\
+&= \sum_{i=1}^n [y_i \mathbf{X}_i \beta - log(1+ exp(\mathbf{X}_i \beta))]
+\end{align*}
+$$
+
+Maximizing the LL has [no closed form solution]{.underline}, so a technique used to obtain MLEs $\hat{\beta}$ is iteratively reweighted least squares (not covered here).
+
+```{r}
+library(car)
+
+Anova(fit)
+```
+
+**Interpretation**
+
+-   Comparing the full vs reduced model with everything EXCEPT age, we see a $\chi^2$ statistic of 0.085 with a p-value of 0.77 meaning that removing age does not significantly worsen the model fit, i.e., age is not a significant predictor when controlling for other variables.
+
+-   Removing the male variable significantly worsens model fit $p<0.01$, meaning this is a significant predictor.
+
+-   Tobacco use has a $\chi^2$ statistic of 53.65 and a p-value of \<0.001, meaning it is a highly significant predictor, and removing it significantly reduces model fit.
+
+------------------------------------------------------------------------
+
+#### Wald vs. LRT: When to Use Which
+
+| | **Wald Test** | **Likelihood Ratio Test** |
+|---|---|---|
+| Statistic | $Z = \hat{\beta}_j / \text{SE}(\hat{\beta}_j)$ | $\lambda_{LR} = -2[l_{\text{reduced}} - l_{\text{full}}]$ |
+| Distribution | $N(0,1)$ | $\chi^2_{k-r}$ |
+| Best for | Single coefficient | Nested model comparison |
+| Requires | Large $n$ (asymptotics) | Same data, same likelihood type |
+| More reliable in small $n$? | No | Yes |
+| In R | `summary(fit)` | `anova(..., test="LRT")` or `car::Anova(fit)` |
+
+------------------------------------------------------------------------
+
+## `r colorize( "Summary", "purple")`
+
+| **Section**             | **Description**                                                                                                                                                                                                                                                                    |
+|----------------|--------------------------------------------------------|
+| **What is the model?**  | A **generalized linear model (GLM)** links the expected response $E(Y|X) = \mu$ to predictors via a link function: $g(\mu) = \beta_0 + \sum_k \beta_k x_{ik}$. <br> The response $Y$ must follow a distribution in the **exponential family** (e.g., Normal, Bernoulli, Binomial). |
+| **Model Components**    | **1. Random component:** Distribution of $Y$ (e.g., Bernoulli for binary data). <br> **2. Systematic component:** Linear predictor $\eta_i = x_i' \beta$. <br> **3. Link function:** $g(\mu_i)$ maps mean response to $\eta_i$.                                                    |
+| **Logistic Regression** | Special case of GLM for **binary outcomes** ($Y \in \{0,1\}$) using the logit link: $g(p) = \log \frac{p}{1-p}$. <br> Coefficients $\beta_j$ represent changes in **log-odds**, while $e^{\beta_j}$ are **odds ratios**.                                                           |
+| **Model Assumptions**   | \- Correct link function (e.g., logit). <br> - Independent observations. <br> - Mean and variance correctly specified for Bernoulli data: $E(Y)=p$, $Var(Y)=p(1-p)$.                                                                                                               |
+| **Hypothesis Testing**  | **Wald Test:** Tests $H_0: \beta_j = 0$ using $Z = \hat{\beta}_j / \text{SE}(\hat{\beta}_j)$. <br> **Likelihood Ratio Test (LRT):** Compares nested models with $\lambda_{LR} = -2 [l_{reduced} - l_{full}] \sim \chi^2$.                                                          |
+| **Interpretation**      | \- $\beta_j$: Change in log-odds of success for a one-unit increase in $X_j$, holding other variables constant. <br> - $e^{\beta_j}$: Odds ratio (OR) for a one-unit change in $X_j$. <br> - Intercept $\beta_0$: Baseline log-odds for reference group.                           |

@@ -1,0 +1,111 @@
+# Module 3 Cheat Sheet {.unnumbered}
+
+```{r}
+# setup
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color, x)
+  } else x
+}
+```
+
+# `r colorize("Marginal Models", "purple")`
+
+Marginal models target **population-average associations** for longitudinal, clustered, or otherwise correlated data. Efficiency comes from modeling the covariance; validity comes from robust (sandwich) standard errors.
+
+------------------------------------------------------------------------
+
+## Weighted & Generalized Least Squares
+
+**WLS (heteroskedastic errors).** Use when $V$ is diagonal (unequal variances, no covariances):
+
+$$
+\hat\beta_{WLS}=(X^\top V^{-1}X)^{-1}X^\top V^{-1}y
+$$
+
+with $V=\mathrm{diag}(v_1,\dots,v_n)$.
+
+**GLS (general covariance).** Allows both heteroskedasticity and correlation:
+
+$$
+\hat\beta_{GLS}=(X^\top V^{-1}X)^{-1}X^\top V^{-1}y
+$$
+
+for any positive-definite $V$.\
+Special cases: $V=\sigma^2 I$ (OLS), diagonal $V$ (WLS).
+
+**Robust covariance (sandwich).** When $V$ is unknown/misspecified, use
+
+$$
+\widehat{\mathrm{Cov}}(\hat\beta)=(X^\top V^{-1}X)^{-1} X^\top V^{-1} \hat\Omega V^{-1} X (X^\top V^{-1}X)^{-1},
+$$
+
+with $\hat\Omega=(y-X\hat\beta)(y-X\hat\beta)^\top$ (for OLS, replace $V^{-1}$ with $I$).
+
+------------------------------------------------------------------------
+
+## Choosing a Working Covariance (Grouped Data)
+
+Let $V_i=\sigma^2 R_i(\alpha)$ for cluster $i$.
+
+| Structure    | $R_i$ idea (cluster size 3)                                                                       | When it fits best                             |
+|------------------------|------------------------|------------------------|
+| Independence | $\begin{bmatrix}1&0&0\\0&1&0\\0&0&1\end{bmatrix}$                                                 | No within-cluster correlation                 |
+| Exchangeable | $\begin{bmatrix}1&\rho&\rho\\\rho&1&\rho\\\rho&\rho&1\end{bmatrix}$                               | Similar correlation for all pairs             |
+| AR(1)        | $\begin{bmatrix}1&\rho&\rho^2\\\rho&1&\rho\\\rho^2&\rho&1\end{bmatrix}$                           | Correlation decays with lag                   |
+| Unstructured | $\begin{bmatrix}1&\rho_{12}&\rho_{13}\\\rho_{12}&1&\rho_{23}\\\rho_{13}&\rho_{23}&1\end{bmatrix}$ | Few time points; flexible but parameter-heavy |
+
+------------------------------------------------------------------------
+
+# `r colorize("Generalized Estimating Equations (GEE)", "purple")`
+
+GEE extends the GLS intuition to **non-Gaussian** outcomes while keeping the target as **population-average effects**. No full likelihood is required.
+
+**Mean model.** $g(\mu_{it})=x_{it}^\top\beta$, where $\mu_{it}=E[y_{it}\mid x_{it}]$.
+
+**Working covariance.** $V_i=A_i^{1/2}\,R(\alpha)\,A_i^{1/2}$ with $A_i$ from the variance function of the GLM family and $R(\alpha)$ the working correlation (independence, exchangeable, AR(1), unstructured).
+
+**Estimating equation.**\
+$U(\beta)=\sum_i D_i^\top V_i^{-1}(y_i-\mu_i)=0$, where $D_i=\partial\mu_i/\partial\beta^\top$.
+
+**Sandwich variance for GEE.**\
+$\widehat{\mathrm{Cov}}(\hat\beta)=B^{-1}MB^{-1}$ with\
+$B=\sum_i D_i^\top V_i^{-1}D_i$, $\quad M=\sum_i D_i^\top V_i^{-1}(y_i-\mu_i)(y_i-\mu_i)^\top V_i^{-1}D_i$.
+
+**Model selection for** $R(\alpha)$. Use QIC to compare working correlations; coefficients remain consistently estimated, and robust SEs remain valid even if $R(\alpha)$ is wrong.
+
+------------------------------------------------------------------------
+
+## Interpretation: GEE vs GLMM
+
+-   **GEE (marginal):** $\beta$ describes the **average** effect in the population (e.g., marginal OR/RR). Robust to misspecified working correlation.
+-   **GLMM (conditional):** $\beta$ describes **subject-specific** effects given random effects; these are often larger in magnitude than GEE's marginal effects. Choose GLMM when conditional interpretation is scientifically primary.
+
+------------------------------------------------------------------------
+
+## Examples
+
+**Continuous outcome (TLC).** WLS/GLS handle time-varying variance and correlation. Modeling $V$ improves efficiency; robust SEs protect inference when $V$ is uncertain.
+
+**Binary outcome (Crossover).** GEE logistic with exchangeable or independence working correlation yields similar inferences with sandwich SEs. GLMM shows larger conditional effects; GEE reports marginal effects relevant for population-level decisions.
+
+------------------------------------------------------------------------
+
+## `r colorize("At-a-Glance Comparison", "purple")`
+
+| Feature              | OLS/WLS/GLS (3A)                              | GEE (3B)                                      | GLMM (contrast)                           |
+|------------------|------------------|------------------|------------------|
+| Outcome types        | Continuous (OLS/WLS/GLS)                      | General (binary, count, etc.)                 | General (binary, count, etc.)             |
+| Correlation handling | Explicit $V$ in estimator                     | Working $R(\alpha)$ inside $V_i$              | Random effects induce correlation         |
+| Target effect        | Marginal (population-average)                 | Marginal (population-average)                 | Conditional (subject-specific)            |
+| Inference guardrail  | Sandwich SEs (if $V$ uncertain)               | Sandwich SEs (robust to $R(\alpha)$ misspec.) | Model-based; robust options less standard |
+| Efficiency lever     | Good $V$ choice                               | Good $R(\alpha)$ choice                       | Correct random-effects structure          |
+| Model selection      | Compare $V$ forms (AIC/REML fit, diagnostics) | QIC for working correlation                   | AIC/BIC; check convergence, RE variance   |
+
+------------------------------------------------------------------------
+
+## `r colorize("Takeaway", "purple")`
+
+Use **WLS/GLS** when outcomes are continuous and variance/correlation matter. Use **GEE** for non-Gaussian correlated data when the estimand is a **population-average** effect. Prefer **GLMM** if your scientific question is **subject-specific**. In all cases, pair modeling of correlation with **robust (sandwich) SEs** to safeguard inference.

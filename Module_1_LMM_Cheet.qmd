@@ -1,0 +1,219 @@
+# Module 1 Cheat Sheet {.unnumbered}
+
+```{r, hide =T, echo=F, message=F}
+library(dplyr)
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+library(dplyr)
+```
+
+## `r colorize("Overview", "purple")`
+
+-   Linear Mixed Models used for correlated or nested data, i.e., longitudinal or clustered data.
+-   Ignoring correlation leads to biased estimates of standard errors.
+-   LMMs refer to the combination of both fixed and random effects:
+    -   Fixed effects remain constant across all units
+    -   Random effects are allowed to vary across units.
+
+## `r colorize("1. Random Intercept Model (Module 1A)", "purple")`
+
+**Model:**
+
+$$
+y_{ij} = \mu + \theta_i + x_{ij}'\beta + \epsilon_{ij}
+= \underbrace{\mathbf{Z}\theta + \mathbf{X}\beta + \mathbf{e}}_{\text{matrix form}},
+$$
+
+where:
+
+-   $\mu$: population mean (overall average),
+-   $\theta_i$: random intercept for subject $i$, $\theta_i \sim N(0, \tau^2)$,
+-   $\epsilon_{ij} \sim N(0, \sigma^2)$: residual error.
+
+**Model Assumptions:**
+
+-   $\epsilon_{ij} \sim N(0, \sigma^2)$,
+-   $\theta_i \sim N(0, \tau^2)$,
+-   $Var(\theta_i) = \tau^2$: the between-subject variance (variation in intercepts across groups/subjects),
+-   $Var(\epsilon_{ij}) = \sigma^2$: the within-subject variance (residual variation within a group/subject).
+-   $\theta_i \perp \epsilon_{ij}$,
+-   Intraclass correlation:h ow much of the total variance comes from between-subject differences $\tau^2$ compared to the total variance $\tau^2 + \sigma^2$.
+
+$$
+  \rho = \frac{\tau^2}{\tau^2 + \sigma^2}.
+$$
+
+**Interpretation:**\
+- $\theta_i$: deviation of group $i$ from the global mean $\mu$,\
+- $\beta$: global (fixed) effect of predictors,\
+- Total variance: $\sigma^2 + \tau^2$,\
+- $\rho$: similarity among observations within the same group.
+
+------------------------------------------------------------------------
+
+## `r colorize("2. Linear Mixed Models (Module 1B)", "purple")`
+
+**Hierarchical Formulation:**
+
+$$
+y_{ij} = \mu + \theta_i + \epsilon_{ij}, \quad
+\theta_i \sim N(0, \tau^2), \quad
+\epsilon_{ij} \sim N(0, \sigma^2).
+$$
+
+**BLUP of** $\theta_i$:
+
+$$
+\hat{\theta}_i = B_i \bar{y}_i, \quad
+B_i = \frac{n_i}{n_i + \sigma^2 / \tau^2},
+$$
+
+where $B_i$ is the **shrinkage factor**: - Small $n_i$ or small $\tau^2$ → **more shrinkage** toward $\mu$, - Large $n_i$ or large $\tau^2$ → less shrinkage.
+
+**Borrowing of Information:**
+
+$$
+\hat{\theta}_i =
+\frac{(1/\tau^2)\mu + (n_i/\sigma^2)\bar{y}_i}{1/\tau^2 + n_i/\sigma^2}.
+$$
+
+-   Groups with small $n_i$ (few observations) are pulled more strongly toward the overall mean $\mu$,
+
+-   Groups with large $n_i$ rely more on their own mean $\bar{y}_i$.
+
+-   This can also be expressed in terms of $\rho$:
+
+$$
+\hat{\theta}_i 
+= \frac{\rho^{-1} \mu + n_i (1-\rho)^{-1} \bar{y}_i}{\rho^{-1} + n_i (1-\rho)^{-1}}.
+$$
+
+**Fixed Effects Estimation (GLS):**
+
+Observations from the same subject or group are **correlated** because of random effects.\
+This induces a **non-diagonal covariance structure**:
+
+$$
+\text{Cov}(\mathbf{y}) = \mathbf{V} \neq \sigma^2 I,
+$$
+
+where $\mathbf{V}$ captures both **between-group variation** ($\tau^2$ from random effects) and **within-group variation** ($\sigma^2$ from residual error).
+
+Ordinary Least Squares (OLS) is no longer optimal because it **ignores this correlation**.
+
+**GLS (Generalized Least Squares) Estimator** accounts for the correlation structure by **weighting observations** according to $\mathbf{V}^{-1}$:
+
+$$
+\widehat{\boldsymbol{\beta}_{GLS}} =
+(\mathbf{X}^T \mathbf{V}^{-1} \mathbf{X})^{-1}
+\mathbf{X}^T \mathbf{V}^{-1} \mathbf{y}.
+$$
+
+where $V = Z G Z^T + R$ with:
+
+-   $G = \tau^2 I$ (between-group),
+-   $R = \sigma^2 I$ (within-group).
+
+This reduces **bias** and improves **efficiency** (smaller variance) compared to OLS when data are correlated.
+
+**Variance Components:**
+
+-   **MLE (Maximum Likelihood Estimation)** of the variance components $(\sigma^2, \tau^2)$ is **biased** because it does not account for the uncertainty in estimating the fixed effects $\boldsymbol{\beta}$.
+
+-   **REML (Restricted Maximum Likelihood)** corrects this bias by removing the information about the fixed effects from the likelihood. The REML estimator for $\sigma^2$ (in the simple case) is:
+
+$$
+\hat{\sigma}^2_{\mathrm{REML}} = \frac{1}{n - p} \sum_{i=1}^n (y_i - \hat{y}_i)^2,
+$$
+
+where:
+
+-   $n$ is the total number of observations,
+-   $p$ is the number of fixed-effect parameters,
+-   $y_i - \hat{y}_i$ are the residuals from the fitted model.
+
+------------------------------------------------------------------------
+
+## `r colorize("3. Random Intercepts and Slopes (Module 1C)", "purple")`
+
+**Model:**
+
+$$
+y_{ij} = (\beta_0 + \theta_{0i}) + (\beta_1 + \theta_{1i}) x_{ij} + \epsilon_{ij},
+$$
+
+where:
+
+-   $\beta_0, \beta_1$: population-level intercept and slope,
+-   $\theta_{0i}, \theta_{1i}$: subject-specific deviations,
+-   $\epsilon_{ij} \sim N(0, \sigma^2)$.
+
+**Random Effects Covariance:**
+
+$$
+\begin{pmatrix}
+\theta_{0i} \\ \theta_{1i}
+\end{pmatrix}
+\sim N \left(
+\begin{pmatrix} 0 \\ 0 \end{pmatrix},
+\begin{pmatrix}
+\tau_0^2 & \rho \tau_0 \tau_1 \\
+\rho \tau_0 \tau_1 & \tau_1^2
+\end{pmatrix}
+\right),
+$$
+
+where $\rho$ is the correlation between intercept and slope.
+
+**Interpretation:**\
+- $\beta_{0i} = \beta_0 + \theta_{0i}$: individual starting point,\
+- $\beta_{1i} = \beta_1 + \theta_{1i}$: individual rate of change,\
+- Positive $\rho$: higher intercepts → steeper slopes,\
+- Negative $\rho$: higher intercepts → flatter slopes.
+
+------------------------------------------------------------------------
+
+## `r colorize("4. Model Comparison and AIC", "purple")`
+
+-   **AIC:**
+
+$$
+  AIC = -2 \ell(\hat{\theta}) + 2p,
+$$
+
+where $p$ is the number of estimated parameters. Lower AIC indicates better model fit.
+
+-   **LRT: For nested models**
+
+$$
+\Lambda = -2 \left\{l(\text{reduced}) - l(\text{full})\right\} = 2\left\{l(\text{full}) - l(\text{reduced})\right\}
+$$
+
+A larger $\Lambda$ indicates the full model fits better.
+
+-   **Model Selection:**
+    -   Compare random intercept vs. random slope models,
+    -   Difference of ≥2 in AIC is considered substantial
+    -   A larger $\Lambda$ indicates the full model fits better.
+
+------------------------------------------------------------------------
+
+<!-- ## `r colorize("5. Key Takeaways", "purple")` -->
+
+<!-- -   **Random Intercepts** account for group-level differences in baseline,\ -->
+
+<!-- -   **Random Slopes** allow the effect of predictors (e.g., time) to vary across groups,\ -->
+
+<!-- -   **BLUP** shrinks individual estimates toward the global mean based on $n_i$ and variance components,\ -->
+
+<!-- -   **REML** is preferred for variance estimation to avoid bias,\ -->
+
+<!-- -   **ICC (**$\rho$) quantifies the proportion of total variance due to group differences,\ -->
+
+<!-- -   Model fit is evaluated with AIC, likelihood ratio tests, and residual diagnostics. -->

@@ -1,0 +1,173 @@
+# Module 2 Cheat Sheet {.unnumbered}
+
+```{r, hide =T, echo=F, message=F}
+library(dplyr)
+colorize <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{%s}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'>%s</span>", color,
+      x)
+  } else x
+}
+library(dplyr)
+```
+
+## `r colorize("Overview", "purple")`
+
+-   Generalized Linear Mixed Models used for correlated or nested data, i.e., longitudinal or clustered data, when outcomes are non-normal.
+-   GLMMs refer to the combination of both fixed and random effects:
+    -   Fixed effects remain constant across all units
+    -   Random effects are allowed to vary across units.
+    -   Non-normal outcome data
+-   Multilevel/Hierarchical Models
+    -   Reparametrization of random effects in a nested structure.
+
+## `r colorize("1. Generalized Linear Models (Module 2A)", "purple")`
+
+**Overview**
+
+-   GLMs extend linear regression to outcomes in the **exponential family** (e.g., Bernoulli, Binomial, Poisson).
+-   Three parts: **random component** (distribution of $Y$), **systematic component** ($\eta_i = x_i' \beta$), **link** $g(\mu_i)=\eta_i$.
+-   [No explicit $\sigma^2$ noise term in the basic GLM form.]{.underline}
+
+**Exponential Family Form**
+
+-   The $Exp$ family form is given by:
+
+$$
+f_{\theta} (y) = exp[\{y\theta - b(\theta)\} / a(\phi) + c(y, \phi )]
+$$
+
+where $a, b, c$ are known functions, and $\phi$ is a known scale parameter. The ONLY parameter is $\theta$.
+
+**Core model**
+
+-   $E(Y_i|X_i)=\mu_i,\quad g(\mu_i)=x_i'\beta$.
+-   Examples: Bernoulli--logit, Binomial--logit, Poisson--log.
+
+**Logistic regression (Bernoulli)**
+
+-   Link: $g(p)=\log\!\left(\frac{p}{1-p}\right)$.
+-   Interpret $\beta_j$: change in **log-odds** per 1-unit in $X_i$; $e^{\beta_j} = \frac{p(y_i=1|x_i=1)/p(y_i=0|x_i=1)}{p(y_i=1|x_i=0)/p(y_i=0|x_i=0)} = \frac{\text{odds(Exposed)}}{\text{odds(Unexposed)}}$ is the **odds ratio (OR)**.
+
+**Inference**
+
+-   **Wald test**: $Z=\hat\beta_j/\text{SE}(\hat\beta_j)$ is used to evaluate significance of individual regression coefficients.
+-   **LRT (nested models)**: $\lambda=-2[l(\text{reduced})-l(\text{full})]\sim\chi^2$ is commonly used to compare model fits.
+
+**PTB example (logit)**
+
+-   Significant: **male** (OR ≈ 1.07), **tobacco** (OR ≈ 1.51).
+-   Baseline probability (female, age 25, non-smoker): $\approx 0.08$.
+-   CIs on ORs by exponentiating the coefficient CIs (don't exponentiate SEs).
+
+**Assumptions**
+
+-   Correct link; independent observations; correct mean--variance for chosen family (e.g., $E(Y)=p, \text{Var}(Y)=p(1-p)$ for Bernoulli).
+
+------------------------------------------------------------------------
+
+## `r colorize("2. Poisson Regression (Module 2b)", "purple")`
+
+**When to use**
+
+-   **Counts** $y_i\in\{0,1,2,\dots\}$ without a fixed number of trials.
+-   Poisson assumes **mean = variance**: $E(y_i)=\text{Var}(y_i)=\theta_i$.
+-   Commonly used for rare diseases to assess rates.
+
+**Model & link**
+
+-   $y_i\sim \text{Poisson}(\theta_i),\quad \log(\theta_i)=x_i'\beta$.
+-   $e^{\beta_j} = \exp(\beta_j) = \frac{\theta_i^*}{\theta_i}$ = **incidence rate ratio (IRR)**.
+
+**Offsets (rates)**
+
+-   Model rates via $log(\theta_i)=log(N_i) + x_i'\beta$ with **offset** $log(N_i)$.
+-   The offset captures the "population-at-risk" or the denominator of the rate.
+
+**Interpretation workflow**
+
+-   One-unit increase in $X_j$: IRR $= e^{\beta_j} = \theta_i^*/\theta_i$.
+
+**Binomial vs Poisson (quick distinction)**
+
+-   **Binomial/Logit**: bounded successes out of $n_i$.
+-   **Poisson/Log**: unbounded event counts (often with exposure/rate).
+
+**Assumptions**
+
+-   Independent counts; correct link; **mean=variance** (watch for overdispersion).
+
+------------------------------------------------------------------------
+
+## `r colorize("3. Generalized Linear Mixed Models (Module 2C)", "purple")`
+
+**Motivation**
+
+-   Outcomes from exponential family **with clustering** (repeated measures, groups).
+-   GLMs assume independence → can understate SEs. GLMMs add **random effects** to model within-cluster correlation.
+
+**GLMM form**
+
+-   $y_{ij}\sim \text{Dist}(p_{ij}),\quad g(p_{ij})=\beta_0 + x_{ij}'\beta + \theta_i, \quad \theta_i\sim N(0,\tau^2)$.
+
+**Likelihood sketch**
+
+-   $L(\beta,\tau^2|y) = \prod_i \int \big(\prod_j [y_{ij}|\theta_i]\big)[\theta_i]\,d\theta_i$ (requires numerical approximation: Laplace/adaptive quadrature).
+
+**Crossover example (logit)**
+
+-   Compare GLMs (independence) vs GLMM (random intercept for subject).
+-   GLMM estimates often **larger but with larger SEs**; $\tau^2$ captures subject heterogeneity.
+-   Predicted probabilities differ by **population-averaged (GLM)** vs **subject-specific (GLMM)** interpretations.
+
+**Poisson GLMM example (Ohio lung cancer)**
+
+-   Random-intercept Poisson with **offset(log population)**.
+-   Interpret fixed effects as IRRs; random-effect SD reflects county heterogeneity.
+-   Practical note: rescale continuous predictors when faced with identifiability warnings.
+
+**Model comparison (review)**
+
+-   **Nested**: LRT; **AIC/BIC** for relative fit (same data, same likelihood type).
+
+**Overdispersion note**
+
+-   If Poisson mean $\neq$ variance, quasi-Poisson can adjust SEs via a scale parameter.
+
+------------------------------------------------------------------------
+
+## `r colorize("4. Multilevel/Hierarchical Models (Module 2D)", "purple")`
+
+**Motivation**
+
+-   **Nested data** (years within students within schools) → multiple correlation layers.
+-   Need random effects at **each level**.
+
+**Three-level LMM**
+
+-   $y_{ijk} = X_{ijk}\beta + u_i + u_{ij} + \epsilon_{ijk}$ $u_i\sim N(0,\nu^2)$ (school), $u_{ij}\sim N(0,\tau^2)$ (student within school), $\epsilon_{ijk}\sim N(0,\sigma^2)$.
+
+**Pooling (partial pooling)**
+
+-   **Across schools**: shrink toward overall mean with weight $w_i=\frac{n_i}{n_i+\sigma^2/\nu^2}$.
+-   **Across students** (within schools): $w_{ij}=\frac{n_{ij}}{n_{ij}+\sigma^2/\tau^2}$.
+
+**Variance decomposition & ICCs**
+
+-   Total variance: $\nu^2+\tau^2+\sigma^2$.
+
+$$
+\text{ICC}_{\text{school}}=\frac{\nu^2}{\nu^2+\tau^2+\sigma^2},\quad
+   \text{ICC}_{\text{student}}=\frac{\nu^2+\tau^2}{\nu^2+\tau^2+\sigma^2}.
+$$
+
+**Interpretation (school math example)**
+
+-   Report fixed effects (e.g., year trend) and random-effect SDs at school, student, and residual levels.
+-   Compute ICCs from fitted variance components.
+
+**Fitting**
+
+-   Random intercepts: `(1 | school/child)`; summarize fixed effects; extract VarCorr; compute ICCs.

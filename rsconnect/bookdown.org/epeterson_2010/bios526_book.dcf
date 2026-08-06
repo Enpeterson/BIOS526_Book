@@ -1,0 +1,12 @@
+name: bios526_book
+title: BIOS526_Book
+username: epeterson_2010
+account: epeterson_2010
+server: bookdown.org
+hostUrl: https://bookdown.org/__api__
+appId: 14465
+bundleId: 109580
+url: https://bookdown.org/epeterson_2010/bios526_book/
+version: 1
+asMultiple: FALSE
+asStatic: TRUE

@@ -1,0 +1,60 @@
+project:
+  type: book
+
+
+book:
+  title: "BIOS 526 Modern Regression Analysis"
+  author: "Emily Peterson"
+  date: "Fall 2025"
+  chapters:
+    - index.qmd
+    - Module_0_MLR.qmd
+    - Module_1A_LMM.qmd
+    - Module_1B_LMM.qmd
+    - Module_1C_LMM.qmd
+    - Module_1_LMM_Cheet.qmd
+    - Module_2A_GLM.qmd
+    - Module_2B_GLM.qmd
+    - Module_2C_GLMMs.qmd
+    - Module_2D_GLMMs.qmd
+    - Module_2_GLM_Cheat.qmd
+    - Module_3A_GEEs.qmd
+    - Module_3B_GEEs.qmd
+    - Module_3_GEE_Cheat.qmd
+    - Module_4A_Splines.qmd
+    - Module_4B_Splines.qmd
+    - Module_4C_Splines.qmd
+    - Module_4_Splines_Cheat.qmd
+    - Module_5A_GAMs.qmd
+    - Module_5B_GAMs.qmd
+    - Module_5_GAM_Cheat.qmd
+    - Module_6_workflow.qmd
+    
+    
+    
+    
+    
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+    css: style.css
+  pdf:
+    documentclass: scrreprt
+    include-in-header: 
+      - text: |
+            \usepackage{amsfonts}
+            \usepackage{amsmath}
+            \usepackage{mdframed}
+            \usepackage{lipsum}
+            \usepackage{tcolorbox}
+            \usepackage{xcolor}
+            \usepackage[thickspace,nobracket]{actuarialangle}
+            \usepackage{tikz}
+            \usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
+   
+
+editor: visual
+
