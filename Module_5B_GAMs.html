@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.433">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>BIOS 526 Modern Regression Analysis - Module 5B Generalized Additive Models</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./Module_5_GAM_Cheat.html" rel="next">
+<link href="./Module_5A_GAMs.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_5B_GAMs.html">Module 5B Generalized Additive Models</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">BIOS 526 Modern Regression Analysis</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_0_MLR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 0: Multiple Linear Regression Review</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1A_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1A Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1B_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1B Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1C_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1C Random Intercepts and Slopes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1_LMM_Cheet.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2A_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2A Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2B_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2B Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2C_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2C Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2D_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2D Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2_GLM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3A_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3A Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3B_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3B Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3_GEE_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4A_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4A Basis Expansion and Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4B_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4B Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4C_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4C Penalized Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4_Splines_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5A_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5A Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5B_GAMs.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 5B Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5_GAM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_6_workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 6 Model Selection, Diagnostics, &amp; Regression Workflow</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#motivation-and-examples" id="toc-motivation-and-examples" class="nav-link active" data-scroll-target="#motivation-and-examples">Motivation and Examples</a></li>
+  <li><a href="#two-dimensional-smooth-interactions-via-tensor-product-smooths" id="toc-two-dimensional-smooth-interactions-via-tensor-product-smooths" class="nav-link" data-scroll-target="#two-dimensional-smooth-interactions-via-tensor-product-smooths"><span style="color: purple;">Two-Dimensional Smooth Interactions via Tensor-Product Smooths</span></a>
+  <ul class="collapse">
+  <li><a href="#model" id="toc-model" class="nav-link" data-scroll-target="#model"><span style="color: green;">Model</span></a></li>
+  <li><a href="#basis-and-penalty" id="toc-basis-and-penalty" class="nav-link" data-scroll-target="#basis-and-penalty"><span style="color: green;">Basis and Penalty</span></a></li>
+  <li><a href="#fitting-example-in-r" id="toc-fitting-example-in-r" class="nav-link" data-scroll-target="#fitting-example-in-r"><span style="color: green;">Fitting Example in R</span></a></li>
+  </ul></li>
+  <li><a href="#varying-coefficient-smooths-effect-modification" id="toc-varying-coefficient-smooths-effect-modification" class="nav-link" data-scroll-target="#varying-coefficient-smooths-effect-modification"><span style="color: purple;">Varying-Coefficient Smooths (Effect Modification)</span></a>
+  <ul class="collapse">
+  <li><a href="#motivation-1" id="toc-motivation-1" class="nav-link" data-scroll-target="#motivation-1"><span style="color: green;">Motivation</span></a></li>
+  <li><a href="#model-1" id="toc-model-1" class="nav-link" data-scroll-target="#model-1"><span style="color: green;">Model</span></a></li>
+  <li><a href="#basis-representation" id="toc-basis-representation" class="nav-link" data-scroll-target="#basis-representation"><span style="color: green;">Basis Representation</span></a></li>
+  <li><a href="#group-specific-penalties" id="toc-group-specific-penalties" class="nav-link" data-scroll-target="#group-specific-penalties"><span style="color: green;">Group-specific penalties</span></a></li>
+  <li><a href="#example-pm2.5-effect-varies-by-day-of-week" id="toc-example-pm2.5-effect-varies-by-day-of-week" class="nav-link" data-scroll-target="#example-pm2.5-effect-varies-by-day-of-week"><span style="color: green;">Example: PM2.5 Effect Varies by Day-of-Week</span></a></li>
+  <li><a href="#interpretation" id="toc-interpretation" class="nav-link" data-scroll-target="#interpretation">Interpretation</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span style="color: purple;">Summary</span></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Module 5B Generalized Additive Models</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p><img src="fig/gams.gif" class="img-fluid"></p>
+<section id="motivation-and-examples" class="level3">
+<h3 class="anchored" data-anchor-id="motivation-and-examples">Motivation and Examples</h3>
+<div class="callout callout-style-default callout-important callout-titled" style="color: red">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Motivation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Module 5A focused on additive nonlinear effects, <span class="math display">\[
+g(\mathbb{E}[Y]) = \beta_0 + \sum_{j=1}^p s_j(X_j),
+\]</span> which assumes that each predictor <span class="math inline">\(j\)</span> has its own smooth effect, but those smooth functions do not interact or vary by group. This rules out two common features of real data:</p>
+<p><strong>(1) Smooth Interactions:</strong> the effect of <span class="math inline">\(X\)</span> may <strong>change smoothly</strong> across levels of another variable <span class="math inline">\(Z\)</span>. In other words, the <strong>shape</strong> of a smooth function <span class="math inline">\(s(X)\)</span> depends on <span class="math inline">\(Z\)</span>, meaning the joint effect is a smooth surface rather than two separate additive curves.</p>
+<p><strong>(2) Group-specific smooth functions and clustering:</strong> Smooth functions may differ by group (effect modification across individuals, regions, clinics, etc.). These situations introduce clustering that cannot be handled by a simply additive GAM. They require either (a) varying-coefficient smooths (smooths allowed to differ by group), or (b) explcit random effects.</p>
+<p><strong>Goal of Module 5B:</strong> add (1) smooth interactions via tensor products; (2) varying-coefficient smooths.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="two-dimensional-smooth-interactions-via-tensor-product-smooths" class="level2">
+<h2 class="anchored" data-anchor-id="two-dimensional-smooth-interactions-via-tensor-product-smooths"><span style="color: purple;">Two-Dimensional Smooth Interactions via Tensor-Product Smooths</span></h2>
+<p>First, consider the setting where we have <strong>two continuous predictors</strong>, <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span>, and the outcome <span class="math inline">\(y\)</span> depends on them in a <strong>jointly nonlinear</strong> way. In this situation, modeling the effect of <span class="math inline">\(x\)</span> and the effect of <span class="math inline">\(z\)</span> separately is not enough; instead, we need a smooth <strong>bivariate surface</strong> <span class="math inline">\(s_{12}(x,z)\)</span> that captures how the effect of one variable changes smoothly across levels of the other.</p>
+<p>This scenario arises in many applications. For example:</p>
+<ul>
+<li>the joint effect of <strong>temperature</strong> and <strong>humidity</strong> on asthma ER visits,</li>
+<li>how <strong>altitude</strong> and <strong>latitude</strong> together influence plant growth,</li>
+<li>the combined influence of <strong>age</strong> and <strong>blood pressure</strong> on cardiovascular risk,</li>
+<li>or the joint relationship between <strong>longitude</strong> and <strong>latitude</strong> in spatial smoothing.</li>
+</ul>
+<p>In all of these settings, the two variables interact in a way that cannot be represented by a single univariate smooth, nor by smoothing the product <span class="math inline">\(xz\)</span>. Instead, we need a flexible framework for estimating a <strong>smooth surface</strong> over the <span class="math inline">\((x,z)\)</span> plane.</p>
+<p><strong>Tensor-product smooths</strong> provide exactly this framework. They are built by combining the univariate spline bases for <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span> and then penalizing curvature separately in each direction.</p>
+<p>The next section explains how these smooth surfaces are constructed using spline <strong>bases</strong> and <strong>anisotropic penalties</strong>.</p>
+<section id="model" class="level3">
+<h3 class="anchored" data-anchor-id="model"><span style="color: green;">Model</span></h3>
+<p>For two continuous predictors <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span>, the model is given by <span class="math display">\[
+g(\mathbb{E}[Y]) = \beta_0 + s_1(x) + s_2(z) + s_{12}(x,z),
+\]</span> where</p>
+<ol type="1">
+<li><span class="math inline">\(s_1(x)\)</span>: a smooth effect of <span class="math inline">\(x\)</span>.</li>
+<li><span class="math inline">\(s_2(z)\)</span>: a smooth effect of <span class="math inline">\(z\)</span>, and</li>
+<li><span class="math inline">\(s_{12}(x,z)\)</span> a smooth interaction between <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span>.</li>
+</ol>
+<p><span style="color: red;"><span class="math inline">\(s_{12}(x,z)\)</span> is not a smooth of the product <span class="math inline">\((xz)\)</span>.</span> Instead it is a bivariate smooth function- a flexible surface over the 2D plane formed by <span class="math inline">\((x,z)\)</span>.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Bivariate smoothing example</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="Module_5B_GAMs_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="basis-and-penalty" class="level3">
+<h3 class="anchored" data-anchor-id="basis-and-penalty"><span style="color: green;">Basis and Penalty</span></h3>
+<p>To construct a smooth surface <span class="math inline">\(s_{12}(x,z)\)</span>, we begin with the same building blocks used in univariate GAMs: <strong>basis functions</strong> and <strong>smoothness penalties</strong>. A tensor-product smooth represents a bivariate surface by combining the marginal spline bases for <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span>.</p>
+<section id="basis-construction" class="level4">
+<h4 class="anchored" data-anchor-id="basis-construction">1. Basis Construction</h4>
+<p>Let</p>
+<ul>
+<li><span class="math inline">\(\mathbf{b}_x(x) \in \mathbb{R}^{Q}\)</span> be the spline basis for <span class="math inline">\(x\)</span>, and<br>
+</li>
+<li><span class="math inline">\(\mathbf{b}_z(z) \in \mathbb{R}^{P}\)</span> be the spline basis for <span class="math inline">\(z\)</span>.</li>
+</ul>
+<p>For example, these could be cubic B-splines.</p>
+<p>A tensor-product smooth constructs a <strong>bivariate basis</strong> by pairing every basis function in <span class="math inline">\(x\)</span> with every basis function in <span class="math inline">\(z\)</span>. This is achieved using the <strong>row-wise Kronecker product</strong>:</p>
+<p><span class="math display">\[
+\mathbf{b}_{xz}(x,z) = \mathbf{b}_x(x) \otimes \mathbf{b}_z(z),
+\]</span></p>
+<ul>
+<li><span class="math inline">\(b_x(x) = (b_{x1}(x), b_{x2}(x), …, b_{xQ}(x)))^T\)</span></li>
+<li><span class="math inline">\(b_z(z) = (b_{z1}(z), b_{z2}(z), …, b_{zP}(z)))^T\)</span> Each is simply the univariate basis you learned in <strong>5A</strong>.</li>
+</ul>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What Is a Kronecker Product?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Tensor–product smooths rely on a mathematical operation called the <strong>Kronecker product</strong>, denoted by <span class="math inline">\(\otimes\)</span>. The Kronecker product combines two matrices to form a larger matrix with a clear block structure, and it provides the machinery for building bivariate spline bases from two univariate bases.</p>
+<section id="definition" class="level4">
+<h4 class="anchored" data-anchor-id="definition">Definition</h4>
+<p>If <span class="math display">\[
+A \text{ is } m \times n, \qquad B \text{ is } p \times q,
+\]</span> then the <strong>Kronecker product</strong> <span class="math inline">\(A \otimes B\)</span> is an <span class="math inline">\((mp) \times (nq)\)</span> matrix obtained by multiplying every element of <span class="math inline">\(A\)</span> by the entire matrix <span class="math inline">\(B\)</span>.</p>
+<p>Formally,</p>
+<p><span class="math display">\[
+A \otimes B =
+\begin{pmatrix}
+a_{11} B &amp; a_{12} B &amp; \cdots &amp; a_{1n} B \\
+a_{21} B &amp; a_{22} B &amp; \cdots &amp; a_{2n} B \\
+\vdots   &amp; \vdots   &amp; \ddots &amp; \vdots   \\
+a_{m1} B &amp; a_{m2} B &amp; \cdots &amp; a_{mn} B
+\end{pmatrix}.
+\]</span></p>
+</section>
+<section id="example" class="level4">
+<h4 class="anchored" data-anchor-id="example">Example</h4>
+<p>Let</p>
+<p><span class="math display">\[
+A = \begin{pmatrix} a &amp; b \\ c &amp; d \end{pmatrix},
+\qquad
+B = \begin{pmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{pmatrix}.
+\]</span></p>
+<p>Then</p>
+<p><span class="math display">\[
+A \otimes B
+=
+\begin{pmatrix}
+aB &amp; bB \\
+cB &amp; dB
+\end{pmatrix}
+=
+\begin{pmatrix}
+a &amp; 2a &amp; b &amp; 2b \\
+3a &amp; 4a &amp; 3b &amp; 4b \\
+c &amp; 2c &amp; d &amp; 2d \\
+3c &amp; 4c &amp; 3d &amp; 4d
+\end{pmatrix}.
+\]</span></p>
+<p>Each entry of <span class="math inline">\(A\)</span> becomes a block equal to that entry multiplied by the whole matrix <span class="math inline">\(B\)</span>.</p>
+</section>
+</div>
+</div>
+</div>
+<p>Using this construction, the smooth surface is:</p>
+<p><span class="math display">\[
+s_{12}(x,z) = \mathbf{b}_{xz}(x,z)^\top \boldsymbol{\beta}.
+\]</span></p>
+<ul>
+<li><span class="math inline">\(\mathbf{b}_{xz}(x,z)\)</span> is the vector of basis functions evaluated at <span class="math inline">\((x,z)\)</span> of length <span class="math inline">\(Q\cdot P\)</span>.</li>
+<li><span class="math inline">\(\mathbf{\beta}\)</span> is the corresponding vector of spline coefficients also length <span class="math inline">\(Q\cdot P\)</span>.</li>
+<li>This allows the effect of <span class="math inline">\(x\)</span> to vary smoothly across values of <span class="math inline">\(z\)</span>, and vice versa.</li>
+</ul>
+</section>
+<section id="penalty-construction" class="level4">
+<h4 class="anchored" data-anchor-id="penalty-construction">2. Penalty Construction</h4>
+<p>From Module <strong>5A</strong>, we learned about penalties for curvature:</p>
+<p><span class="math display">\[
+\text{Penalty} = \lambda \int [s''(x)]^2 \, dx
+\]</span></p>
+<p>where <span class="math inline">\(s''(x)\)</span> is the second derivative (curvature).<br>
+The smoothing parameter <span class="math inline">\(\lambda\)</span> controls wiggliness: larger <span class="math inline">\(\lambda\)</span> values produce smoother functions.</p>
+<p>For a spline written as <span class="math inline">\(s(x) = \mathbf{b}_x(x)^\top \boldsymbol{\beta}\)</span>, the curvature penalty becomes</p>
+<p><span class="math display">\[
+\text{Penalty} = \lambda\, \boldsymbol{\beta}^\top \mathbf{K} \boldsymbol{\beta}.
+\]</span></p>
+<p>Here:</p>
+<ul>
+<li><span class="math inline">\(\boldsymbol{\beta}\)</span> = spline coefficients<br>
+</li>
+<li><span class="math inline">\(\lambda\)</span> = smoothing parameter<br>
+</li>
+<li><span class="math inline">\(\mathbf{K}\)</span> = penalty matrix representing the integral of squared curvature</li>
+</ul>
+</section>
+<section id="extending-to-bivariate-smooths" class="level4">
+<h4 class="anchored" data-anchor-id="extending-to-bivariate-smooths">Extending to bivariate smooths</h4>
+<p>In one dimension, each smooth has its own penalty matrix. For the marginal smooths:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{K}_x\)</span> controls curvature in the <span class="math inline">\(x\)</span>-direction (a <span class="math inline">\(Q \times Q\)</span> matrix)<br>
+</li>
+<li><span class="math inline">\(\mathbf{K}_z\)</span> controls curvature in the <span class="math inline">\(z\)</span>-direction (a <span class="math inline">\(P \times P\)</span> matrix)</li>
+</ul>
+<p>For a bivariate smooth, we now have a <strong>grid</strong> of <span class="math inline">\(Q \times P\)</span> tensor-product basis functions. To smooth the full surface, we must extend the 1D penalties across this grid.</p>
+<p>The idea is:</p>
+<ul>
+<li>the <span class="math inline">\(x\)</span>-penalty should apply to <strong>every</strong> <span class="math inline">\(z\)</span>-basis function<br>
+</li>
+<li>the <span class="math inline">\(z\)</span>-penalty should apply to <strong>every</strong> <span class="math inline">\(x\)</span>-basis function</li>
+</ul>
+<p>This extension is achieved using <strong>Kronecker products</strong> with identity matrices.</p>
+</section>
+<section id="interpreting-the-tensor-product-penalty" class="level4">
+<h4 class="anchored" data-anchor-id="interpreting-the-tensor-product-penalty">Interpreting the Tensor-Product Penalty</h4>
+<p>The full penalty for a bivariate tensor-product smooth is</p>
+<p><span class="math display">\[
+\mathcal{P}(\boldsymbol{\beta}) =
+\lambda_x\, \boldsymbol{\beta}^\top (\mathbf{K}_x \otimes \mathbf{I}_{P})\, \boldsymbol{\beta}
+\;+\;
+\lambda_z\, \boldsymbol{\beta}^\top (\mathbf{I}_{Q} \otimes \mathbf{K}_z)\, \boldsymbol{\beta}.
+\]</span></p>
+<p>Below we break this expression into two interpretable pieces—one for the <span class="math inline">\(x\)</span>-direction and one for the <span class="math inline">\(z\)</span>-direction.</p>
+</section>
+<section id="x-direction-smoothing-term" class="level4">
+<h4 class="anchored" data-anchor-id="x-direction-smoothing-term"><strong>1.</strong> <span class="math inline">\(x\)</span>-direction smoothing term</h4>
+<p><span class="math display">\[
+\lambda_x\, \boldsymbol{\beta}^\top (\mathbf{K}_x \otimes \mathbf{I}_{P})\, \boldsymbol{\beta}.
+\]</span></p>
+<p><strong>Components:</strong></p>
+<ul>
+<li><p><span class="math inline">\(\mathbf{K}_x\)</span><br>
+The univariate curvature penalty matrix for the <span class="math inline">\(x\)</span>-basis functions<br>
+(size <span class="math inline">\(Q \times Q\)</span>).</p></li>
+<li><p><span class="math inline">\(\mathbf{I}_{P}\)</span><br>
+Identity matrix of size <span class="math inline">\(P \times P\)</span>, one for each <span class="math inline">\(z\)</span>-basis function.</p></li>
+<li><p><span class="math inline">\(\mathbf{K}_x \otimes \mathbf{I}_P\)</span><br>
+Kronecker product that <strong>repeats</strong> <span class="math inline">\(\mathbf{K}_x\)</span> across all <span class="math inline">\(P\)</span> columns of the <span class="math inline">\(Q \times P\)</span> tensor-product grid.<br>
+This applies the <span class="math inline">\(x\)</span>-direction curvature penalty to <em>every</em> <span class="math inline">\(z\)</span>-basis function.</p></li>
+<li><p><span class="math inline">\(\lambda_x\)</span><br>
+Smoothing parameter controlling how much we penalize wiggliness <strong>in the</strong> <span class="math inline">\(x\)</span>-direction.</p></li>
+</ul>
+<p><strong>Interpretation:</strong><br>
+This term smooths the surface <em>horizontally</em>. It controls how wiggly the surface can be if we vary <span class="math inline">\(x\)</span> while holding <span class="math inline">\(z\)</span> fixed.</p>
+</section>
+<section id="z-direction-smoothing-term" class="level4">
+<h4 class="anchored" data-anchor-id="z-direction-smoothing-term"><strong>2.</strong> <span class="math inline">\(z\)</span>-direction smoothing term</h4>
+<p><span class="math display">\[
+\lambda_z\, \boldsymbol{\beta}^\top (\mathbf{I}_{Q} \otimes \mathbf{K}_z)\, \boldsymbol{\beta}.
+\]</span></p>
+<p><strong>Components:</strong></p>
+<ul>
+<li><p><span class="math inline">\(\mathbf{K}_z\)</span><br>
+The univariate curvature penalty matrix for the <span class="math inline">\(z\)</span>-basis functions<br>
+(size <span class="math inline">\(P \times P\)</span>).</p></li>
+<li><p><span class="math inline">\(\mathbf{I}_{Q}\)</span><br>
+Identity matrix of size <span class="math inline">\(Q \times Q\)</span>, one for each <span class="math inline">\(x\)</span>-basis function.</p></li>
+<li><p><span class="math inline">\(\mathbf{I}_Q \otimes \mathbf{K}_z\)</span><br>
+Kronecker product that <strong>repeats</strong> <span class="math inline">\(\mathbf{K}_z\)</span> down all <span class="math inline">\(Q\)</span> rows of the tensor-product grid.<br>
+This applies the <span class="math inline">\(z\)</span>-direction curvature penalty to <em>every</em> <span class="math inline">\(x\)</span>-basis function.</p></li>
+<li><p><span class="math inline">\(\lambda_z\)</span><br>
+Smoothing parameter controlling how much we penalize wiggliness <strong>in the</strong> <span class="math inline">\(z\)</span>-direction.</p></li>
+</ul>
+<p><strong>Interpretation:</strong><br>
+This term smooths the surface <em>vertically</em>. It controls how wiggly the surface can be if we vary <span class="math inline">\(z\)</span> while holding <span class="math inline">\(x\)</span> fixed.</p>
+<p>A tensor-product smooth is a <span class="math inline">\(Q \times P\)</span> grid of basis functions.<br>
+To make the resulting surface smooth:</p>
+<ul>
+<li><p><span class="math inline">\(\mathbf{K}_x \otimes \mathbf{I}_P\)</span><br>
+smooths along the <span class="math inline">\(x\)</span>-direction (left–right across the grid)</p></li>
+<li><p><span class="math inline">\(\mathbf{I}_Q \otimes \mathbf{K}_z\)</span><br>
+smooths along the <span class="math inline">\(z\)</span>-direction (up–down across the grid)</p></li>
+</ul>
+<p>Together, these two terms allow the model to control smoothness <strong>separately</strong> in each direction—important when <span class="math inline">\(x\)</span> and <span class="math inline">\(z\)</span> are measured on very different scales or units.</p>
+<hr>
+</section>
+</section>
+<section id="fitting-example-in-r" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-example-in-r"><span style="color: green;">Fitting Example in R</span></h3>
+<p>Coming back to the example in <strong>Module 5A</strong>, we are interested in the association between daily variation in mortality counts and daily variation in air pollution exposure (PM<span class="math inline">\(_{2.5}\)</span>). In a time-series design, the population serves as the unit of analysis—our outcome represents total daily deaths in a defined area.</p>
+<p>As before, <strong>time-varying confounders</strong> such as temperature, humidity, and long-term/seasonal trends must be controlled flexibly using smooth functions of time and weather. In this dataset, we have:</p>
+<ul>
+<li><code>alldeaths</code>: total daily deaths<br>
+</li>
+<li><code>pm25</code>: daily PM<span class="math inline">\(_{2.5}\)</span> (or <code>pm25.lag1</code> for lagged exposure)<br>
+</li>
+<li><code>Temp</code>: daily mean temperature<br>
+</li>
+<li><code>DpTemp</code>: daily mean dew point temperature (a proxy for humidity)<br>
+</li>
+<li><code>date2</code>: numeric time index<br>
+</li>
+<li><code>fdow</code>: day-of-week factor</li>
+</ul>
+<p>We model the expected daily deaths using a log–link Poisson GAM:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\log \mathbb{E}[y_t]
+&amp;= \beta_0
+\;+\; f_{\text{Temp,PM}}\!\big(\text{Temp}_t,\, \text{PM}_{t-1}\big)
+\;+\; \boldsymbol{\alpha}^\top \mathbf{1}\{\text{DOW}_t\} \\[4pt]
+&amp;\quad+\; f_{\text{Season}}(\text{DOY}_t)
+\;+\; f_{\text{Trend}}(t),
+\end{aligned}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(y_t\)</span> is the daily death count (e.g., <code>alldeaths</code>),<br>
+</li>
+<li><span class="math inline">\(\text{Temp}_t\)</span> is the daily mean temperature,<br>
+</li>
+<li><span class="math inline">\(\text{PM}_{t-1}\)</span> is lagged PM<span class="math inline">\(_{2.5}\)</span> (e.g., <code>pm25.lag1</code>),<br>
+</li>
+<li><span class="math inline">\(\mathbf{1}\{\text{DOW}_t\}\)</span> are indicators for day-of-week,<br>
+</li>
+<li><span class="math inline">\(f_{\text{Season}}(\text{DOY}_t)\)</span> is a cyclic seasonal smooth (e.g., <code>s(doy, bs = "cc")</code>),<br>
+</li>
+<li><span class="math inline">\(f_{\text{Trend}}(t)\)</span> is a smooth long-term trend in time (e.g., <code>s(date2)</code>).</li>
+</ul>
+<p>The bivariate smooth interaction is represented as</p>
+<p><span class="math display">\[
+f_{\text{Temp,PM2.5}}(x, z)
+=
+\sum_{q=1}^{Q} \sum_{p=1}^{P}
+\beta_{qp}\, b_{xq}(x)\, b_{zp}(z),
+\]</span></p>
+<p>where</p>
+<ul>
+<li><span class="math inline">\(\{b_{xq}(x)\}_{q=1}^{Q}\)</span> are the basis functions for temperature,<br>
+</li>
+<li><span class="math inline">\(\{b_{zp}(z)\}_{p=1}^{P}\)</span> are the basis functions for PM<span class="math inline">\(_{2.5}\)</span>,<br>
+</li>
+<li><span class="math inline">\(\beta_{qp}\)</span> are the coefficients for the tensor-product basis functions <span class="math inline">\(b_{xq}(x) b_{zp}(z)\)</span>.</li>
+</ul>
+<p>Smoothness in each direction is controlled separately via <strong>anisotropic penalties</strong>:</p>
+<p><span class="math display">\[
+\lambda_x\, \boldsymbol{\beta}^\top (\mathbf{K}_x \otimes \mathbf{I}_{P})\, \boldsymbol{\beta}
+\;+\;
+\lambda_z\, \boldsymbol{\beta}^\top (\mathbf{I}_{Q} \otimes \mathbf{K}_z)\, \boldsymbol{\beta},
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mgcv)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="fu">paste0</span>(<span class="fu">getwd</span>(), <span class="st">'/data/NYC.RData'</span>))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>date2 <span class="ot">&lt;-</span> <span class="fu">order</span>(health<span class="sc">$</span>date)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>pm25.lag1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="cn">NA</span>, health<span class="sc">$</span>pm25[<span class="dv">1</span><span class="sc">:</span><span class="dv">1825</span>])</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>doy <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(health<span class="sc">$</span>date, <span class="st">"%j"</span>))   <span class="co"># Day of year</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>fdow <span class="ot">&lt;-</span> <span class="fu">factor</span>(health<span class="sc">$</span>dow)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>health<span class="sc">$</span>fdow <span class="ot">&lt;-</span> <span class="fu">relevel</span>(health<span class="sc">$</span>fdow, <span class="at">ref =</span> <span class="st">"Sunday"</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>mod_tensor <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  alldeaths <span class="sc">~</span> </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">te</span>(Temp, pm25.lag1) <span class="sc">+</span> <span class="co"># smooth interaction: temperature × air pollution. Deafult k=10</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(doy, <span class="at">bs =</span> <span class="st">"cc"</span>, <span class="at">k =</span> <span class="dv">30</span>) <span class="sc">+</span> <span class="co"># cyclic annual seasonality</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(date2, <span class="at">k =</span> <span class="dv">100</span>) <span class="sc">+</span> <span class="co"># long-term trend</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    fdow,        <span class="co"># day-of-week</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> poisson,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">data   =</span> health</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_tensor)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: poisson 
+Link function: log 
+
+Formula:
+alldeaths ~ te(Temp, pm25.lag1) + s(doy, bs = "cc", k = 30) + 
+    s(date2, k = 100) + fdow
+
+Parametric coefficients:
+              Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)   4.952756   0.005220 948.832  &lt; 2e-16 ***
+fdowFriday    0.009615   0.007355   1.307   0.1911    
+fdowMonday    0.033186   0.007314   4.538 5.69e-06 ***
+fdowSaturday  0.003926   0.007360   0.533   0.5938    
+fdowThursday  0.013130   0.007352   1.786   0.0741 .  
+fdowTuesday   0.016740   0.007340   2.281   0.0226 *  
+fdowWednesday 0.014038   0.007349   1.910   0.0561 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                      edf Ref.df Chi.sq  p-value    
+te(Temp,pm25.lag1)  5.135  6.091   63.6  &lt; 2e-16 ***
+s(doy)             16.684 28.000   22.0 2.79e-06 ***
+s(date2)           58.397 68.874  371.2  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =   0.48   Deviance explained = 50.2%
+UBRE = 0.12532  Scale est. = 1         n = 1825</code></pre>
+</div>
+</div>
+<p><strong>Interpretation</strong>:</p>
+<p>The tensor‐product smooth for <code>Temp × pm25.lag1</code> is statistically significant <span class="math inline">\((p &lt; 2e−16)\)</span>, indicating that the joint effect of temperature and lagged PM<span class="math inline">\(_{2.5}\)</span> on daily mortality is not simply additive. Certain combinations of higher PM<span class="math inline">\(_{2.5}\)</span> and temperature are associated with elevated mortality risk, consistent with known temperature-pollution interactions. You can inspect the marginal basis dimensions via:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>mod_tensor<span class="sc">$</span>smooth[[<span class="dv">1</span>]]<span class="sc">$</span>margin[[<span class="dv">1</span>]]<span class="sc">$</span>bs.dim   <span class="co"># basis size for Temp</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mod_tensor<span class="sc">$</span>smooth[[<span class="dv">1</span>]]<span class="sc">$</span>margin[[<span class="dv">2</span>]]<span class="sc">$</span>bs.dim   <span class="co"># basis size for pm25.lag1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5</code></pre>
+</div>
+</div>
+<p>The maximum dimension of the tensor-product basis in <span class="math inline">\(Q \times P = 5 \times 5 = 25\)</span>, but the penalty shrinks many directions towards zero. Because the smooth is penalized, only a subset of these directions are used in the final fit. Inspecting the <span class="math inline">\(EDF \approx 5.1\)</span>, this means after penalization, the estimated surface behaves like a smooth with roughly 5 free parameters.</p>
+<p><strong>Note:</strong> In the univariate case (<code>s(x)</code>), the default basis size is <span class="math inline">\(k = 10\)</span>. This is <em>not</em> the default for tensor-product smooths. For <code>te(x, z)</code>, <code>mgcv</code> does <strong>not</strong> automatically use <span class="math inline">\(k = 10\)</span> for each marginal smooth. Instead, it typically assigns smaller default basis sizes (often <span class="math inline">\(k = 5\)</span> for each margin) unless the user specifies <code>k = c(k_x, k_z)</code> explicitly.</p>
+<hr>
+</section>
+</section>
+<section id="varying-coefficient-smooths-effect-modification" class="level2">
+<h2 class="anchored" data-anchor-id="varying-coefficient-smooths-effect-modification"><span style="color: purple;">Varying-Coefficient Smooths (Effect Modification)</span></h2>
+<p>Tensor-product smooths allow a fully flexible two-dimensional surface when two continuous predictors jointly influence the outcome. However, many applied problems require a different—but related—form of flexibility: <strong>the effect of a predictor may change across groups</strong>, but not in a fully two-dimensional continuous way.</p>
+<p>Examples include:</p>
+<ul>
+<li>the temperature–mortality curve differing by <strong>season</strong>,<br>
+</li>
+<li>the PM<span class="math inline">\(_{2.5}\)</span> effect varying by <strong>weekday vs.&nbsp;weekend</strong>,<br>
+</li>
+<li>growth curves differing by <strong>sex</strong>,<br>
+</li>
+<li>time trends differing by <strong>site</strong>, <strong>clinic</strong>, or <strong>neighborhood</strong>.</li>
+</ul>
+<p>In these settings we are not modeling a smooth surface over the continuous <span class="math inline">\((x,z)\)</span> plane. Instead, we want the univariate smooth <span class="math inline">\(s(x)\)</span> to <strong>vary by group</strong> in a structured and parsimonious way. This is called a <strong>varying-coefficient smooth</strong>.</p>
+<hr>
+<section id="motivation-1" class="level3">
+<h3 class="anchored" data-anchor-id="motivation-1"><span style="color: green;">Motivation</span></h3>
+<p>Suppose we believe the effect of PM<span class="math inline">\(_{2.5}\)</span> on mortality differs between weekdays and weekends. A single smooth <span class="math inline">\(s(\text{PM})\)</span> cannot represent two different shapes. Instead, we allow:</p>
+<p><span class="math display">\[
+s_{\text{weekday}}(\text{PM}) \quad\text{and}\quad
+s_{\text{weekend}}(\text{PM}).
+\]</span></p>
+<p>But we should not fit two <em>unrelated</em> smooths. Instead, we build them as:</p>
+<ul>
+<li>a <strong>baseline smooth</strong> <span class="math inline">\(s(\text{PM})\)</span>, plus<br>
+</li>
+<li>a <strong>difference smooth</strong> that captures how weekends deviate from weekdays.</li>
+</ul>
+<p>This preserves identifiability and allows the two curves to share information.</p>
+<hr>
+</section>
+<section id="model-1" class="level3">
+<h3 class="anchored" data-anchor-id="model-1"><span style="color: green;">Model</span></h3>
+<p>Let <span class="math inline">\(G\)</span> be a binary or categorical grouping variable.<br>
+A varying-coefficient smooth model is:</p>
+<p><span class="math display">\[
+g(\mathbb{E}[Y]) =
+\beta_0
++ \beta_G G
++ s(x)
++ s(x,\text{by}=G).
+\]</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li><span class="math inline">\(s(x)\)</span> = baseline smooth, common to all groups<br>
+</li>
+<li><span class="math inline">\(s(x,\text{by}=G)\)</span> = group-specific <strong>difference</strong> curves<br>
+</li>
+<li><span class="math inline">\(\beta_G G\)</span> = parametric main effect (required for identifiability)</li>
+</ul>
+<p>This is the <strong>smooth analogue of an interaction</strong> between <span class="math inline">\(x\)</span> and <span class="math inline">\(G\)</span>.</p>
+<hr>
+</section>
+<section id="basis-representation" class="level3">
+<h3 class="anchored" data-anchor-id="basis-representation"><span style="color: green;">Basis Representation</span></h3>
+<p>Mathematically, a varying-coefficient smooth expands the basis functions across groups. Let <span class="math inline">\(G\)</span> have <span class="math inline">\(C\)</span> categories and let <span class="math inline">\(b_m(x)\)</span> be the <span class="math inline">\(k\)</span> basis functions for <span class="math inline">\(s(x)\)</span>. Then</p>
+<p><span class="math display">\[
+s(x) + s(x,\text{by}=G)
+=
+\sum_{m=1}^k \beta_m\, b_m(x)
+\;+\;
+\sum_{c=1}^{C-1}
+\sum_{m=1}^k
+\gamma_{mc}\, b_m(x)\, I(G=c),
+\]</span></p>
+<p>where <span class="math inline">\(I(G=c)\)</span> is the group indicator. The first term is the baseline smooth (for the reference group). The second term contains <span class="math inline">\((C-1)\)</span> group-specific deviation smooths, each using the same basis functions but different coefficients. Adding the baseline and deviation smooths yields a complete smooth for every group.</p>
+<hr>
+</section>
+<section id="group-specific-penalties" class="level3">
+<h3 class="anchored" data-anchor-id="group-specific-penalties"><span style="color: green;">Group-specific penalties</span></h3>
+<!-- The penalty, as before, applies separately to $\boldsymbol{\beta}$ and -->
+<!-- each group-specific $\boldsymbol{\gamma}_G$.This structure ensures that smooths across groups share the same basis -->
+<!-- functions but differ through their coefficients. -->
+<p>Each smooth term in a varying–coefficient model receives its own smoothing penalty. If <span class="math inline">\(G\)</span> has <span class="math inline">\(C\)</span> categories, then <code>s(x)</code> has one penalty <span class="math inline">\(\lambda_{\text{base}}\)</span>, and the <span class="math inline">\((C-1)\)</span> deviation smooths <code>s(x, by = G)</code> have their own penalties $,* , `. Thus the full penalty is</p>
+<p><span class="math display">\[
+\lambda_{\text{base}}\,\boldsymbol{\beta}^\top K \boldsymbol{\beta}
+\;+\;
+\sum_{c=1}^{C-1}
+\lambda_c\,\boldsymbol{\gamma}_c^\top K \boldsymbol{\gamma}_c.
+\]</span> Each group (except the reference) has its own deviation smooth:</p>
+<ul>
+<li><p><span class="math inline">\(\boldsymbol{\gamma}_c\)</span><br>
+Coefficient vector for the <strong>deviation smooth</strong> of group <span class="math inline">\(c\)</span>.<br>
+This describes how group <span class="math inline">\(c\)</span>’s smooth curve differs from the baseline smooth.</p></li>
+<li><p><strong>Same penalty matrix</strong> <span class="math inline">\(K\)</span><br>
+The deviation smooths use the <strong>same spline basis</strong> as the baseline,so the same curvature penalty applies.</p></li>
+<li><p><span class="math inline">\(\boldsymbol{\gamma}_c^\top K \boldsymbol{\gamma}_c\)</span><br>
+Measures how wiggly the deviation curve is for group <span class="math inline">\(c\)</span>.</p></li>
+<li><p><span class="math inline">\(\lambda_c\)</span><br>
+Smoothing parameter for the deviation smooth of group <span class="math inline">\(c\)</span>.<br>
+Large <span class="math inline">\(\lambda_c\)</span> shrinks the deviation toward zero (group curve becomes similar to the baseline).<br>
+Small <span class="math inline">\(\lambda_c\)</span> allows a flexible, group-specific shape.</p></li>
+</ul>
+<hr>
+</section>
+<section id="example-pm2.5-effect-varies-by-day-of-week" class="level3">
+<h3 class="anchored" data-anchor-id="example-pm2.5-effect-varies-by-day-of-week"><span style="color: green;">Example: PM2.5 Effect Varies by Day-of-Week</span></h3>
+<p>Using the NYC mortality data, suppose we want the PM<span class="math inline">\(_{2.5}\)</span>–mortality relationship to differ across days of the week.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mod_vc <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  alldeaths <span class="sc">~</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(pm25.lag1) <span class="sc">+</span><span class="co"># baseline smooth</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(pm25.lag1, <span class="at">by =</span> fdow) <span class="sc">+</span> <span class="co"># day-of-week differences</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(doy, <span class="at">bs =</span> <span class="st">"cc"</span>, <span class="at">k =</span> <span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">s</span>(date2, <span class="at">k =</span> <span class="dv">100</span>),</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> poisson,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> health</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_vc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: poisson 
+Link function: log 
+
+Formula:
+alldeaths ~ s(pm25.lag1) + s(pm25.lag1, by = fdow) + s(doy, bs = "cc", 
+    k = 30) + s(date2, k = 100)
+
+Parametric coefficients:
+            Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept) 4.966015   0.001974    2516   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                              edf Ref.df  Chi.sq p-value    
+s(pm25.lag1)                1.000  1.000   1.544   0.214    
+s(pm25.lag1):fdowSunday     3.664  4.717   7.035   0.292    
+s(pm25.lag1):fdowFriday     4.445  5.422   8.916   0.142    
+s(pm25.lag1):fdowMonday     1.000  1.000   1.183   0.277    
+s(pm25.lag1):fdowSaturday   1.000  1.000   1.237   0.266    
+s(pm25.lag1):fdowThursday   1.000  1.001   1.254   0.263    
+s(pm25.lag1):fdowTuesday    1.719  2.171   1.793   0.398    
+s(pm25.lag1):fdowWednesday  1.000  1.000   1.413   0.235    
+s(doy)                     17.981 28.000  27.149  &lt;2e-16 ***
+s(date2)                   54.108 64.497 343.777  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Rank: 199/200
+R-sq.(adj) =  0.465   Deviance explained = 48.7%
+UBRE = 0.15709  Scale est. = 1         n = 1825</code></pre>
+</div>
+</div>
+</section>
+<section id="interpretation" class="level3">
+<h3 class="anchored" data-anchor-id="interpretation">Interpretation</h3>
+<p><strong>PM</strong><span class="math inline">\(_{2.5}\)</span> effects</p>
+<ul>
+<li><p>The baseline smooth <code>s(pm25.lag1)</code> has <strong>edf = 1.0</strong>, meaning the smooth pooled across all days of the week is effectively linear.</p></li>
+<li><p>All group-specific deviation smooths (<code>s(pm25.lag1, by = fdowX)</code>) have <strong>very low EDFs</strong> (mostly 1–2) and <strong>are not statistically significant</strong>.</p></li>
+<li><p>There is <strong>no</strong> evidence that the PM<span class="math inline">\(_{2.5}\)</span>–mortality relationship is nonlinear and no evidence that this relationship <strong>varies by day of week</strong>.</p></li>
+<li><p>PM<span class="math inline">\(_{2.5}\)</span> appears to have a <strong>consistent linear effect</strong> across weekdays.</p></li>
+</ul>
+<p><strong>Seasonality and long-term trend</strong></p>
+<ul>
+<li><code>s(doy)</code> (day-of-year) has <strong>edf ≈ 18</strong>, <strong>p &lt; 2e−16</strong> → strong seasonal mortality pattern.</li>
+<li><code>s(date2)</code> has <strong>edf ≈ 54</strong>, <strong>p &lt; 2e−16</strong> → substantial smooth long-term trend over the study period.</li>
+</ul>
+<p><strong>Conclusion</strong></p>
+<ul>
+<li>Adding varying-coefficient smooths does <strong>not</strong> materially improve fit.</li>
+<li>Weekday-specific PM<span class="math inline">\(_{2.5}\)</span> effects are <strong>weak or absent</strong> in this dataset.</li>
+<li>Seasonal and long-term trends remain the dominant smooth components.</li>
+</ul>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="Module_5B_GAMs_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary"><span style="color: purple;">Summary</span></h2>
+<table class="table">
+<colgroup>
+<col style="width: 45%">
+<col style="width: 54%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Topic</strong></th>
+<th><strong>Summary</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>What is new?</strong></td>
+<td>Module 5B extends Module 5A by introducing: (1) <strong>tensor-product smooths</strong> for smooth interactions between two continuous variables, producing a bivariate surface <span class="math inline">\(s_{12}(x,z)\)</span>; and (2) <strong>varying-coefficient smooths</strong> using <code>by=</code> to allow the effect of a predictor to differ across categorical groups.</td>
+</tr>
+<tr class="even">
+<td><strong>Tensor-product basis</strong></td>
+<td>A bivariate smooth is constructed from the <strong>tensor (Kronecker) product</strong> of the marginal spline bases. If <span class="math inline">\(\mathbf{b}_x(x)\in\mathbb{R}^Q\)</span> and <span class="math inline">\(\mathbf{b}_z(z)\in\mathbb{R}^P\)</span>, then the surface basis is:</td>
+</tr>
+<tr class="odd">
+<td><strong>Anisotropic penalties</strong></td>
+<td>Smoothness in each direction is controlled separately. Let <span class="math inline">\(\mathbf{K}_x\)</span> and <span class="math inline">\(\mathbf{K}_z\)</span> be the marginal curvature penalty matrices. The tensor-product penalty is:</td>
+</tr>
+<tr class="even">
+<td><strong>Varying-coefficient smooths</strong></td>
+<td>When the effect of a predictor varies by group, the model uses a baseline smooth plus <strong>group-specific deviation smooths</strong>:</td>
+</tr>
+<tr class="odd">
+<td><strong>Penalties for varying-coefficient terms</strong></td>
+<td>Each smooth receives its own curvature penalty:</td>
+</tr>
+<tr class="even">
+<td><strong>Estimation</strong></td>
+<td>All smoothing parameters—<span class="math inline">\(\lambda_x,\lambda_z\)</span>, the baseline smooth penalty, and group-specific penalties—are estimated using <strong>REML</strong> (preferred) or <strong>GCV</strong>. Penalization controls smooth complexity and prevents overfitting.</td>
+</tr>
+<tr class="odd">
+<td><strong>Uncertainty</strong></td>
+<td>mgcv provides approximate Bayesian covariance for spline coefficients, yielding <strong>pointwise confidence bands</strong> for univariate smooths and uncertainty surfaces for tensor-product smooths.</td>
+</tr>
+<tr class="even">
+<td><strong>Diagnostics</strong></td>
+<td>Use <code>gam.check()</code> to assess whether the basis dimension <span class="math inline">\(k\)</span> is adequate. Inspect <strong>EDF</strong> to understand smooth complexity. Use <code>concurvity()</code> to detect nonlinear dependencies across smooth terms.</td>
+</tr>
+<tr class="odd">
+<td><strong>Interpretation</strong></td>
+<td>Tensor-product interactions are interpreted via <strong>2D heatmaps</strong> or <strong>3D perspective surfaces</strong> of <span class="math inline">\(s_{12}(x,z)\)</span>. Varying-coefficient models are interpreted by comparing the <strong>baseline smooth</strong> and <strong>group-specific deviation curves</strong>. Interpretations occur on the <strong>link scale</strong>.</td>
+</tr>
+<tr class="even">
+<td><strong>Key takeaway</strong></td>
+<td>GAMs allow effects to be <strong>nonlinear</strong>, <strong>interactive</strong>, and <strong>group-specific</strong>, while penalization maintains interpretability. Tensor-product smooths model flexible 2D surfaces; varying-coefficient smooths model structured effect modification—greatly extending the GAM framework introduced in Module 5A.</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./Module_5A_GAMs.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Module 5A Generalized Additive Models</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./Module_5_GAM_Cheat.html" class="pagination-link">
+        <span class="nav-page-text">Module 5 Cheat Sheet</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

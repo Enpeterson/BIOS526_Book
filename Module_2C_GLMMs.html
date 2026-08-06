@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.433">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>BIOS 526 Modern Regression Analysis - Module 2C Generalized Linear Mixed Models</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./Module_2D_GLMMs.html" rel="next">
+<link href="./Module_2B_GLM.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_2C_GLMMs.html">Module 2C Generalized Linear Mixed Models</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">BIOS 526 Modern Regression Analysis</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_0_MLR.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 0: Multiple Linear Regression Review</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1A_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1A Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1B_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1B Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1C_LMM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1C Random Intercepts and Slopes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_1_LMM_Cheet.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 1 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2A_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2A Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2B_GLM.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2B Generalized Linear Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2C_GLMMs.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 2C Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2D_GLMMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2D Generalized Linear Mixed Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_2_GLM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 2 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3A_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3A Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3B_GEEs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3B Marginal Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_3_GEE_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 3 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4A_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4A Basis Expansion and Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4B_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4B Parametric Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4C_Splines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4C Penalized Splines</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_4_Splines_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 4 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5A_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5A Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5B_GAMs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5B Generalized Additive Models</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_5_GAM_Cheat.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 5 Cheat Sheet</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./Module_6_workflow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 6 Model Selection, Diagnostics, &amp; Regression Workflow</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#motivation-and-examples" id="toc-motivation-and-examples" class="nav-link active" data-scroll-target="#motivation-and-examples">Motivation and Examples</a></li>
+  <li><a href="#motivating-example-crossover-design" id="toc-motivating-example-crossover-design" class="nav-link" data-scroll-target="#motivating-example-crossover-design">Motivating Example: Crossover Design</a></li>
+  <li><a href="#calculating-predicted-probabilities" id="toc-calculating-predicted-probabilities" class="nav-link" data-scroll-target="#calculating-predicted-probabilities">Calculating Predicted Probabilities</a></li>
+  <li><a href="#the-better-approach-generalized-linear-mixed-model" id="toc-the-better-approach-generalized-linear-mixed-model" class="nav-link" data-scroll-target="#the-better-approach-generalized-linear-mixed-model"><strong>The Better Approach: Generalized Linear Mixed Model</strong></a>
+  <ul class="collapse">
+  <li><a href="#likelihood-in-glmm-estimation" id="toc-likelihood-in-glmm-estimation" class="nav-link" data-scroll-target="#likelihood-in-glmm-estimation">Likelihood in GLMM Estimation</a></li>
+  <li><a href="#find-the-mle" id="toc-find-the-mle" class="nav-link" data-scroll-target="#find-the-mle">Find the MLE</a></li>
+  <li><a href="#fitting-glmms" id="toc-fitting-glmms" class="nav-link" data-scroll-target="#fitting-glmms">Fitting GLMMs</a></li>
+  <li><a href="#population-versus-conditional-interpretations" id="toc-population-versus-conditional-interpretations" class="nav-link" data-scroll-target="#population-versus-conditional-interpretations">Population versus Conditional Interpretations</a></li>
+  </ul></li>
+  <li><a href="#poisson-regression" id="toc-poisson-regression" class="nav-link" data-scroll-target="#poisson-regression">Poisson Regression</a>
+  <ul class="collapse">
+  <li><a href="#interpretation-of-poisson-regression" id="toc-interpretation-of-poisson-regression" class="nav-link" data-scroll-target="#interpretation-of-poisson-regression">Interpretation of Poisson Regression</a></li>
+  <li><a href="#motivating-example-cancer-incidence-in-ohio" id="toc-motivating-example-cancer-incidence-in-ohio" class="nav-link" data-scroll-target="#motivating-example-cancer-incidence-in-ohio">Motivating Example: Cancer Incidence in Ohio</a></li>
+  <li><a href="#overdispersion-of-the-poisson-assumption.-rcolorizeskip-red" id="toc-overdispersion-of-the-poisson-assumption.-rcolorizeskip-red" class="nav-link" data-scroll-target="#overdispersion-of-the-poisson-assumption.-rcolorizeskip-red">Overdispersion of the Poisson Assumption. <code>rcolorize("SKIP", "RED")</code></a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span style="color: purple;">Summary</span></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Module 2C Generalized Linear Mixed Models</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="motivation-and-examples" class="level3">
+<h3 class="anchored" data-anchor-id="motivation-and-examples">Motivation and Examples</h3>
+<div class="illustration callout callout-style-default callout-important callout-titled" style="color: red">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Motivation:
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In many real-world datasets, observations are <strong>non-normal</strong> and <strong>not independent</strong>. For example:</p>
+<ul>
+<li>Repeated measurements on the same subject.</li>
+<li>Clusters of data within counties, hospitals, or schools.</li>
+<li>Panel data where observations are grouped by time or region.</li>
+</ul>
+<p><strong>Why can’t we use standard GLMs?</strong></p>
+<ul>
+<li><p>A standard GLM assumes independent observations. When data are clustered, this assumption is violated, leading to <strong>biased standard errors</strong> and <strong>incorrect inference</strong>.</p></li>
+<li><p>To address this, <strong>Generalized Linear Mixed Models (GLMMs)</strong> extend GLMs by including <strong>random effects</strong> that account for within-group correlation and unobserved heterogeneity.</p></li>
+<li><p>Essentially we are combining methods learned in Modules 1 and 2.</p></li>
+</ul>
+</div>
+</div>
+</section>
+<section id="motivating-example-crossover-design" class="level3">
+<h3 class="anchored" data-anchor-id="motivating-example-crossover-design">Motivating Example: Crossover Design</h3>
+<p>We consider a crossover trial on cerebrovascular deficiency:</p>
+<p>Data were obtained from a crossover trial on the disease of cerebrovascular deficiency. The goal is to investigate the side effects of a treatment drug compared to a placebo</p>
+<p>Design:</p>
+<ul>
+<li><p>34 patients: an active drug (A) and followed by placebo (B).</p></li>
+<li><p>33 patients: a placebo (B) followed by an active drug (A).</p></li>
+<li><p>Outcome: a normal (0) or abnormal (1) electrodiagram.</p></li>
+<li><p>Each patient has a binary observation at period 1 and period 2.</p></li>
+<li><p>Crossover design: can have “carryover” effects which confound treatment effect estimation. Test whether washout period was adequate.</p></li>
+</ul>
+<p>Variables:</p>
+<ul>
+<li><p>ID <span class="math inline">\(i\)</span>: subject id</p></li>
+<li><p>period <span class="math inline">\(j\)</span>: 0 = period 1, 1 = period 2.</p></li>
+<li><p>group: 0 = B then A, 1 = A then B</p></li>
+<li><p>outcome <span class="math inline">\(y_{ij}\)</span>: 0 = normal ECG response; 1 = abnormal ECG response.</p></li>
+<li><p>trt: 0 = placebo, 1 = active drug.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">paste0</span>(<span class="st">"data/crossover.RDS"</span>))</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  ID group period trt outcome
+1  1     1      0   0       0
+2  1     1      1   1       0
+3  2     1      0   0       0
+4  2     1      1   1       0
+5  3     1      0   0       0
+6  3     1      1   1       0</code></pre>
+</div>
+</div>
+<p>Consider the following logistic model assuming responses within each subject are independent.</p>
+<ul>
+<li><p>Model 1: <span class="math inline">\(logit P(y_{ij} =1) = \beta_0 + \beta_1 trt_{ij}\)</span></p></li>
+<li><p>Model 2: <span class="math inline">\(logit P(y_{ij} = 1) = \beta_0 + \beta_1 trt_{ij} + \beta_2 period_{ij}\)</span></p></li>
+<li><p>Model 3: <span class="math inline">\(logit P(y_{ij} = 1) = \beta_0 + \beta_1 trt_{ij} + \beta_2 period_{ij} + \beta_3 trt_{ij} \times period_{ij}\)</span></p></li>
+</ul>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the interpretation of <span class="math inline">\(\beta_1\)</span>?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The parameter <span class="math inline">\(\beta_1\)</span> represents the log-odds difference in the probability of having an abnormal ECG response between the active drug (trt = 1) and placebo (trt = 0), holding other variables (such as period) constant.</p>
+<ul>
+<li><span class="math inline">\(\exp(\beta_1)\)</span> is the odds ratio of an abnormal ECG response for patients on the active drug compared to those on placebo.</li>
+<li>If <span class="math inline">\(\beta_1 &gt; 0\)</span>, the active drug is associated with higher odds of abnormal ECG.</li>
+<li>If <span class="math inline">\(\beta_1 &lt; 0\)</span>, the active drug is associated with lower odds of abnormal ECG.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the interpretation of <span class="math inline">\(\beta_2\)</span>?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The parameter <span class="math inline">\(\beta_2\)</span> captures the effect of the study period on the log-odds of an abnormal ECG response, independent of treatment. Specifically, <span class="math inline">\(\beta_2\)</span> represents the change in log-odds of an abnormal ECG when moving from period 1 (period = 0) to period 2 (period = 1), holding treatment (trt) constant.</p>
+<ul>
+<li><span class="math inline">\(\exp(\beta_2)\)</span> is the odds ratio of an abnormal ECG in period 2 compared to period 1, after adjusting for treatment.</li>
+<li>A significant <span class="math inline">\(\beta_2\)</span> may indicate period effects (e.g., differences due to time, learning effects, or insufficient washout).</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-tip no-icon callout-titled" style="color:gray">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+What is the interpretation of <span class="math inline">\(\beta_3\)</span>?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The parameter <span class="math inline">\(\beta_3\)</span> represents the interaction between treatment and period. It measures how the treatment effect (the difference in log-odds between active drug and placebo) changes from period 1 to period 2.</p>
+<ul>
+<li>If <span class="math inline">\(\beta_3 = 0\)</span>, it means the treatment effect is consistent across periods.</li>
+<li>If <span class="math inline">\(\beta_3 \neq 0\)</span>, it suggests the treatment effect differs between the two periods, which could indicate a carryover effect (e.g., residual impact of the drug from the previous period).</li>
+<li><span class="math inline">\(\exp(\beta_3)\)</span> quantifies how the odds ratio for treatment vs.&nbsp;placebo changes in period 2 relative to period 1.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fit_model1 <span class="ot">&lt;-</span> <span class="fu">glm</span>(<span class="at">formula =</span> outcome <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span> trt ,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>fit_model2 <span class="ot">&lt;-</span> <span class="fu">glm</span>(<span class="at">formula =</span> outcome <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span> trt <span class="sc">+</span> period ,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>fit_model3 <span class="ot">&lt;-</span> <span class="fu">glm</span>(<span class="at">formula =</span> outcome <span class="sc">~</span> <span class="dv">1</span><span class="sc">+</span> trt <span class="sc">+</span> period <span class="sc">+</span> trt<span class="sc">*</span>period,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># summary(fit_model1)</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># summary(fit_model2)</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co"># summary(fit_model3)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<table class="table">
+<colgroup>
+<col style="width: 42%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 19%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Covariate</th>
+<th>Model 1</th>
+<th>Model 2</th>
+<th>Model 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Intercept <span class="math inline">\(\beta_0\)</span></td>
+<td>-1.08 (0.28)</td>
+<td>-1.22 (0.34)</td>
+<td>-1.54 (0.45)</td>
+</tr>
+<tr class="even">
+<td>Treatment <span class="math inline">\(\beta_1\)</span></td>
+<td>0.56 (0.38)</td>
+<td>0.56 (0.38)</td>
+<td>1.11 (0.57)</td>
+</tr>
+<tr class="odd">
+<td>Period <span class="math inline">\(\beta_2\)</span></td>
+<td></td>
+<td>0.27 (0.38)</td>
+<td>0.85 (0.58)</td>
+</tr>
+<tr class="even">
+<td>Trt <span class="math inline">\(\times\)</span> Period <span class="math inline">\(\beta_3\)</span></td>
+<td></td>
+<td></td>
+<td>-1.02 (0.77)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>We compared models to check for period <span class="math inline">\(\beta_2\)</span> and carryover <span class="math inline">\(\beta_3\)</span> effects.</li>
+<li>Ignoring period effects (Model 1) biases treatment effect <span class="math inline">\(\beta_1\)</span>.</li>
+<li>Model 3: after controlling for period and carryover effects, the estimated OR of abnormal ECG in period 1 was <span class="math inline">\(3.03 = e^{1.11}\)</span> and p-value = 0.053. The 95% confidence interval is</li>
+</ul>
+<p><span class="math display">\[
+(e^{1.11-1.96 * 0.57}, e^{1.11 + 1.96 * 0.57}) = (0.99, 9.27)
+\]</span></p>
+<ul>
+<li><p>At <span class="math inline">\(\alpha = 0.05\)</span>, we fail to reject the null hypothesis that the treatment in period has an impact on the probability of an abnormal ECG. However, future research is needed since the p-value is 0.053.</p></li>
+<li><p><span class="math inline">\(\beta_3\)</span> is negative - the second period effect is smaller for those who received active drug during the second period; however, not significant. This confirms no strong carryover effect.</p></li>
+</ul>
+<hr>
+</section>
+<section id="calculating-predicted-probabilities" class="level3">
+<h3 class="anchored" data-anchor-id="calculating-predicted-probabilities">Calculating Predicted Probabilities</h3>
+<p>Using the estimates from Model 3, we can calculate predicted probabilities for each treatment/period combination:</p>
+<p>Treatment → Placebo group:</p>
+<p><span class="math display">\[
+\begin{align*}
+P(outcome = 1|period=0, trt=1) &amp;= \left(\frac{e^{\beta_0 + \beta_1}}{1 + e^{\beta_0 + \beta_1}}\right) = 0.394\\
+P(outcome = 1|period=1, trt=0) &amp;= \left(\frac{e^{\beta_0 + \beta_2}}{1 + e^{\beta_0 + \beta_2}}\right) = 0.333
+\end{align*}
+\]</span></p>
+<p>Placebo → Treatment group:</p>
+<p><span class="math display">\[
+\begin{align*}
+P(outcome = 1|period=0, trt=0) &amp;= \left(\frac{e^{\beta_0 }}{1 + e^{\beta_0 }}\right) = 0.176\\
+P(outcome = 1|period=1, trt=1) &amp;= \left(\frac{e^{\beta_0 + \beta_1 + \beta_2 + \beta_3}}{1 + e^{\beta_0 + \beta_1 + \beta_2 + \beta_3}}\right) = 0.353
+\end{align*}
+\]</span></p>
+<hr>
+<section id="model-comparisons" class="level4">
+<h4 class="anchored" data-anchor-id="model-comparisons">Model Comparisons</h4>
+<p>This is review from Module 2. We can compare models using the LRT and AIC metrics. Here we want to compare the three nested models</p>
+<ul>
+<li><p><strong>Nested Models:</strong><br>
+Models are nested when the simpler model (reduced) can be obtained by setting one or more parameters of the larger model (full) to zero.<br>
+<em>Example:</em> Model 1 (treatment only) ⊂ Model 2 (treatment + period) ⊂ Model 3 (treatment + period + interaction).</p></li>
+<li><p><strong>Likelihood Ratio Test (LRT):</strong></p>
+<ul>
+<li>Test statistic:<br>
+<span class="math display">\[
+\lambda_{LR} = -2 \big[ l(\hat{\beta}_{reduced}) - l(\hat{\beta}_{full}) \big].
+\]</span></li>
+<li>Under <span class="math inline">\(H_0\)</span>, <span class="math inline">\(\lambda_{LR} \sim \chi^2_{df}\)</span>, where <span class="math inline">\(df = p_{full} - p_{reduced}\)</span>.<br>
+</li>
+<li>In R: In this example, we will compare model fits 1 and 2.</li>
+</ul></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fit_reduced <span class="ot">&lt;-</span> fit_model1</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>fit_full <span class="ot">&lt;-</span> fit_model2</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(fit_reduced, fit_full, <span class="at">test =</span> <span class="st">"LRT"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Deviance Table
+
+Model 1: outcome ~ 1 + trt
+Model 2: outcome ~ 1 + trt + period
+  Resid. Df Resid. Dev Df Deviance Pr(&gt;Chi)
+1       132     164.42                     
+2       131     163.89  1  0.53169   0.4659</code></pre>
+</div>
+</div>
+<ul>
+<li><p>A significant LRT p-value means the additional variable(s) improve model fit. In our results, we show there is not a significant difference between models 1 and 2.</p></li>
+<li><p><strong>Information Criteria (AIC/BIC):</strong></p>
+<ul>
+<li><strong>AIC:</strong></li>
+</ul></li>
+</ul>
+<p><span class="math display">\[
+    AIC = -2 \, l(\hat{\beta}) + 2p,
+\]</span> where <span class="math inline">\(p\)</span> is the number of parameters. Lower AIC indicates better fit.<br>
+- Use AIC/BIC penalizes models with larger number of parameters by <span class="math inline">\(2p\)</span>, so it tests whether added complexity is warranted.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(fit_model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 168.418</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(fit_model2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 169.8863</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(fit_model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 170.0983</code></pre>
+</div>
+</div>
+<ul>
+<li>A difference of <strong>2+ in AIC</strong> is often considered meaningful.<br>
+</li>
+<li>The lowest AIC comes from model 1 (but it is only slightly lower) meaning the three models perform similarly. There is really nothing gained in models 2 and 3.</li>
+</ul>
+<p><strong>What’s wrong with this model???</strong></p>
+<ul>
+<li><p>It assumes observations are independent, but they are not.</p>
+<p><span class="math inline">\(L(\beta; y,x) = \prod_{i=1}^n \prod_{j=1}^{r_i} p_{ij}^{y_{ij}} (1-p_{ij})^{1-y_{ij}}\)</span></p></li>
+<li><p>The product of the individual likelihoods implies the independence assumption, i.e., the product treats clustered observations in the same way as different participants.</p></li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="the-better-approach-generalized-linear-mixed-model" class="level2">
+<h2 class="anchored" data-anchor-id="the-better-approach-generalized-linear-mixed-model"><strong>The Better Approach: Generalized Linear Mixed Model</strong></h2>
+<p>A <strong>Generalized Linear Mixed Model (GLMM)</strong> is an extension of GLM that allows for both <strong>fixed</strong> and <strong>random</strong> effects. It is used when data are not normal and are not independent. Main components of GLMMs:</p>
+<ol type="1">
+<li>A <strong>GLM structure</strong>: Response variable <span class="math inline">\(y_{ij}\)</span> from the exponential family with link function <span class="math inline">\(g(\cdot)\)</span>.</li>
+<li><strong>Random effects</strong>: Group-specific terms (e.g., intercepts or slopes) to capture within-group variability. Account for correlation or heterogenity within groups.</li>
+<li><strong>Fixed effects</strong>: Population level parameters that apply to all observations.</li>
+</ol>
+<p>For clustered data with groups <span class="math inline">\(i = 1, \dots, n\)</span> and observations <span class="math inline">\(j = 1, \dots, r_i\)</span>:</p>
+<p><span class="math display">\[
+\begin{align*}
+y_{ij} &amp;\sim \text{Distribution}(p_{ij}) \\
+g(p_{ij})&amp;= \beta_0 + x_{ij}' \beta + \theta_i
+\end{align*}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(g()\)</span> is the link function that connects the mean of the response variable to the linear predictor.</li>
+<li><span class="math inline">\(\beta_0\)</span> is the <strong>overall intercept</strong> (fixed effect).</li>
+<li><span class="math inline">\(x_{ij}\)</span> is a vector of covariates.</li>
+<li><span class="math inline">\(\beta\)</span> is the vector of <strong>fixed effects</strong> (population-level effects).</li>
+<li><span class="math inline">\(\theta_i \sim N(0, \tau^2)\)</span> is a <strong>random intercept</strong> for group <span class="math inline">\(i\)</span>.</li>
+<li><span class="math inline">\(\tau^2\)</span> captures between-group variance.</li>
+</ul>
+<!-- Let index $i=1,…,n$ denote group ID, $j=1,…,r_i$ denote observation within group $i$, $N=\sum_{i=1}^n r_i$. Consider the random-intercept logistic regression model: -->
+<!-- \$\$ -->
+<!-- \begin{align*} -->
+<!-- y_{ij} &\sim Binomial (p_{ij})\\ -->
+<!-- logit(p_{ij}) & = \beta_0 + \theta_i + x_{ij}' \beta\\ -->
+<!-- \theta_i &\sim N(0, \tau^2) -->
+<!-- \end{align*} -->
+<!-- \$\$ -->
+<!-- -   $\beta_0$ is the overall baseline log odds. -->
+<!-- -   $\theta_i$ is the difference between group-specific baseline log odds and $\beta_0$, i.e., Group-specific total intercept = $\beta_0 + \theta_i$. -->
+<!-- -   $x_{ij}$ is the $p \times 1$ vector of covariates and $\beta$ is the corresponding vector of regression coefficients. -->
+<!-- -   $\tau^2$ is the variation of baseline log odds between groups (e.g. each group is an individual). -->
+<!-- -   We assume the group-specific intercept is normally i.i.d distributed. -->
+<section id="likelihood-in-glmm-estimation" class="level3">
+<h3 class="anchored" data-anchor-id="likelihood-in-glmm-estimation">Likelihood in GLMM Estimation</h3>
+<p>Let <span class="math inline">\(\mathbf{y}\)</span> be all the data and <span class="math inline">\(\mathbf{\theta}\)</span> the vector of all random effects. So there are <strong>two</strong> levels of randomness. We can define the joint distribution <span class="math inline">\([\mathbf{y}, \mathbf{\theta}]\)</span>:</p>
+<p><span class="math display">\[
+\begin{align*}
+[\mathbf{y}, \mathbf{\theta}] &amp;= \prod_{i=1}^{n} [\mathbf{y}_i, \theta_i] \qquad \mathbf{y}_i \text{ are independent}\\
+&amp;= \prod_{i=1}^n [\mathbf{y}_i|\theta_i][\theta_i], \quad \text{Chain Rule}\\
+&amp;= \prod_{i=1}^n \left(\prod_{j=1}^{r_i} [y_{ij}|\theta_i]\right)[\theta_i] \qquad (\bf{\text{condition independence assumption}})\\
+&amp;= \prod_{i=1}^n \left(\prod_{j=1}^{r_i} [y_{ij} |\theta_i]\right) (2\pi \tau^2)^{-1/2} exp\left(-\frac{\theta_i^2}{2\tau^2}\right)
+\end{align*}
+\]</span></p>
+<p>where <span class="math inline">\(n=\)</span> total number of subjects (groups) and <span class="math inline">\(r_i\)</span> number of observations within each subject/group.</p>
+<p>The <span class="math inline">\(y_{ij}\)</span> are <u>conditionally independent given the random effects</u>. This is a critical assumption that clusters are independent from each other if we fix random effects.</p>
+<p>We define the likelihood for the <u>fixed parameters</u>. Integrating each <span class="math inline">\(\theta_i\)</span>, the likelihood is:</p>
+<p><span class="math display">\[
+L(\beta,\beta_0,\tau^2|\mathbf{y}) = \prod_{i=1}^n \int\left(\prod_{j=1}^{r_i} [y_{ij} |\theta_i]\right) (2\pi \tau^2)^{-1/2} exp\left(-\frac{\theta_i^2}{2\tau^2}\right)
+\]</span></p>
+<ul>
+<li><span class="math inline">\(n\)</span> integrals is hard to solve.</li>
+</ul>
+</section>
+<section id="find-the-mle" class="level3">
+<h3 class="anchored" data-anchor-id="find-the-mle">Find the MLE</h3>
+<ul>
+<li><p>Because of our non-linear link function, maximizing the above function that involves an integral is quite challenging.</p></li>
+<li><p>Statistical software performs numerical integration that involves some approximation. Convergence issues are commong in glmms.</p></li>
+</ul>
+<hr>
+</section>
+<section id="fitting-glmms" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-glmms">Fitting GLMMs</h3>
+<p>To handle correlated observations, we include a <strong>subject-specific random intercept</strong> <span class="math inline">\(\theta_i\)</span>:</p>
+<p><span class="math display">\[
+logit P(y_{ij}=1) = \beta_0 + \beta_1 \text{trt}_{ij} + \beta_2 \text{period}_{ij} + \beta_3 (\text{trt} \times \text{period})_{ij} + \theta_i,
+\]</span></p>
+<p>where <span class="math inline">\(\theta_i \sim N(0, \tau^2)\)</span>.</p>
+<ul>
+<li><span class="math inline">\(\theta_i\)</span> represents <strong>subject-specific deviations</strong> from the population-level log-odds <span class="math inline">\(\beta_0\)</span>.</li>
+<li>This structure correctly models the <strong>within-subject correlation</strong>.</li>
+</ul>
+<p>The random intercept logistic model can be fit using the <span class="math inline">\(glmer()\)</span> function with the binomial family.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: Matrix</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fit_glmm <span class="ot">&lt;-</span> <span class="fu">glmer</span>(<span class="at">formula =</span> outcome <span class="sc">~</span> trt<span class="sc">*</span>period <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>ID) ,</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data, <span class="at">nAGQ =</span> <span class="dv">100</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_glmm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generalized linear mixed model fit by maximum likelihood (Adaptive
+  Gauss-Hermite Quadrature, nAGQ = 100) [glmerMod]
+ Family: binomial  ( logit )
+Formula: outcome ~ trt * period + (1 | ID)
+   Data: data
+
+     AIC      BIC   logLik deviance df.resid 
+   145.1    159.6    -67.5    135.1      129 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.1386 -0.2151 -0.1470  0.2447  1.3143 
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ ID     (Intercept) 24.15    4.915   
+Number of obs: 134, groups:  ID, 67
+
+Fixed effects:
+            Estimate Std. Error z value Pr(&gt;|z|)  
+(Intercept)   -4.981      2.116  -2.354   0.0186 *
+trt            3.578      2.107   1.698   0.0895 .
+period         2.772      2.015   1.376   0.1689  
+trt:period    -3.319      3.270  -1.015   0.3100  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+           (Intr) trt    period
+trt        -0.827              
+period     -0.787  0.899       
+trt:period  0.655 -0.901 -0.915</code></pre>
+</div>
+</div>
+<p><strong>Interpretation:</strong></p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Covariate</th>
+<th>GLM</th>
+<th>GLMM</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Intercept <span class="math inline">\(\beta_0\)</span></td>
+<td>-1.54 (0.45)</td>
+<td>-4.98 (2.12)</td>
+</tr>
+<tr class="even">
+<td>Treatment <span class="math inline">\(\beta_1\)</span></td>
+<td>1.11 (0.57)</td>
+<td>3.58 (2.11)</td>
+</tr>
+<tr class="odd">
+<td>Period <span class="math inline">\(\beta_2\)</span></td>
+<td>0.85 (0.58)</td>
+<td>2.78 (2.02)</td>
+</tr>
+<tr class="even">
+<td>Trt <span class="math inline">\(\times\)</span> Period <span class="math inline">\(\beta_3\)</span></td>
+<td>-1.02 (0.77)</td>
+<td>-3.32 (3.27)</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\tau^2\)</span></td>
+<td>—</td>
+<td><span class="math inline">\(24.15\)</span></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p>The point estimates from the random intercept model (GLMM) are <strong>larger</strong>, but their <strong>standard errors also increased</strong>, so inference on direction and significance remains the same.</p></li>
+<li><p>The baseline (period 1, placebo) <strong>log-odds</strong> across subjects has:</p>
+<ul>
+<li>A population mean of <span class="math inline">\(-4.98\)</span>,</li>
+<li>A standard deviation of <span class="math inline">\(4.92\)</span>.</li>
+</ul></li>
+<li><p>The middle 95% of subjects have baseline log-odds between: <span class="math display">\[
+-4.98 \pm 1.96 \times 4.92 = (-14.62, \, 4.66),
+\]</span> which corresponds to baseline probabilities of approximately <span class="math inline">\((4 \times 10^{-7}, \, 0.99)\)</span> — indicating <strong>very large between-subject heterogeneity</strong>!</p></li>
+</ul>
+<hr>
+</section>
+<section id="population-versus-conditional-interpretations" class="level3">
+<h3 class="anchored" data-anchor-id="population-versus-conditional-interpretations">Population versus Conditional Interpretations</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="fig/popfig.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Differences between population vs individual trajectories</figcaption>
+</figure>
+</div>
+<p>In a <strong>GLM</strong>, we estimate the <strong>marginal model</strong>, where random effects are integrated out or assumed zero:</p>
+<p><span class="math display">\[
+g(E[y_{ij}]) = \beta X_{ij},
+\]</span> which is interpreted as the <span style="color: red;">population-averaged effect</span> or <span style="color: blue;">marginal effect</span>. In contrast, a <strong>GLMM</strong> estimates the slopes <strong>conditional on random effects</strong>:</p>
+<p><span class="math display">\[
+g(E[y_{ij}|\theta_i]) = \beta X_{ij} + \theta_i,                                       \]</span></p>
+<p>where <span class="math inline">\(\theta_i\)</span> accounts for subject-specific deviations. These are known as <span style="color: blue;">conditional effects</span>. Because GLMs assume independence, they can underestimate standard errors when clustering is ignored.</p>
+<p>To clarify the difference, consider the <strong>subject-specific (conditional)</strong> expectation and the <strong>population-averaged (marginal)</strong> expectation. For a given subject <span class="math inline">\(i\)</span>, the expected outcome at observation <span class="math inline">\(j\)</span> is</p>
+<p><span class="math display">\[
+E(y_{ij} \mid \theta_i) = g^{-1} \big( \beta_0 + \theta_i + \sum_{k=1}^p \beta x_{ijk} \big),                                                                                 \]</span></p>
+<p>where <span class="math inline">\(g^{-1}\)</span> is the inverse link function, <span class="math inline">\(\beta_0 + \theta_i\)</span> represents the subject-specific intercept, and the <span class="math inline">\(\beta x_{ijk}\)</span> terms are fixed effects. This expression defines an individual trajectory, capturing how each subject deviates from the population mean.</p>
+<p>The <strong>population-averaged mean</strong> is obtained by integrating over the distribution of random effects:</p>
+<p><span class="math display">\[
+E[y_{ij}] = E_{\theta_i} \left[ g^{-1} \big( \beta_0 + \theta_i + \beta'X_{ij} \big) \right].
+\]</span></p>
+<p>For non-linear link functions such as the logit, this is not equal to simply applying <span class="math inline">\(g^{-1}\)</span> to the fixed-effect part:</p>
+<p><span class="math display">\[
+E[g^{-1}(z)] \neq g^{-1}(E[z]).                                                         \]</span></p>
+<p>This explains why the population-averaged curve (the black line in the figure) does not match the mean of the subject-specific curves. The non-linearity of <span class="math inline">\(g^{-1}\)</span> causes averaging across individual probabilities to produce a curve with a different shape. Thus, GLMs and GLMMs provide fundamentally different interpretations of the coefficients <span class="math inline">\(\beta\)</span>.</p>
+<hr>
+</section>
+</section>
+<section id="poisson-regression" class="level2">
+<h2 class="anchored" data-anchor-id="poisson-regression">Poisson Regression</h2>
+<p>The <strong>Poisson model</strong> is used for <strong>count data</strong>, where each observation <span class="math inline">\(y_i\)</span> can take non-negative integer values <span class="math inline">\(0, 1, 2, \dots\)</span>:</p>
+<p><span class="math display">\[
+y_i \sim \text{Poisson}(\theta_i) = \frac{e^{-\theta_i} \theta_i^{y_i}}{y_i!}.
+\]</span></p>
+<p>As with linear and logistic regression, the mean of <span class="math inline">\(y\)</span> is related to covariates through a <strong>linear predictor</strong>:</p>
+<p><span class="math display">\[
+\theta_i = \exp(X_i \beta).
+\]</span></p>
+<p>The <strong>canonical link function</strong> is the <strong>log link</strong>:</p>
+<p><span class="math display">\[
+g(\theta_i) = \log(\theta_i),
+\]</span></p>
+<p>which maps <span class="math inline">\((0, \infty) \rightarrow (-\infty, \infty)\)</span> and ensures predicted counts are positive.</p>
+<div class="callout callout-style-simple callout-note no-icon callout-titled" style="color: blue">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Reminder: Differences from the Binomial Model
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>Binomial/logistic regression</strong> is used when <span class="math inline">\(y_i\)</span> represents the number of “successes” out of <span class="math inline">\(n_i\)</span> trials (bounded count data).<br>
+</li>
+<li><strong>Poisson regression</strong> is used when <span class="math inline">\(y_i\)</span> is an unbounded count (e.g., number of events over time or space) and not based on a fixed number of trials. Commonly used to model rates</li>
+</ul>
+</div>
+</div>
+<hr>
+<section id="interpretation-of-poisson-regression" class="level3">
+<h3 class="anchored" data-anchor-id="interpretation-of-poisson-regression">Interpretation of Poisson Regression</h3>
+<p>Consider a simple model with one covariate:</p>
+<p><span class="math display">\[
+\begin{aligned}
+y_i &amp;\overset{\text{ind}}{\sim} \text{Poisson}(\lambda_i), \\
+\log(\lambda_i) &amp;= \beta_0 + \beta_1 x_i.
+\end{aligned}
+\]</span></p>
+<ul>
+<li>When <span class="math inline">\(x_i = 0\)</span>, the expected count is <span class="math inline">\(\lambda_i = e^{\beta_0}\)</span>.</li>
+<li>For a one-unit change in <span class="math inline">\(x_i\)</span>: <span class="math display">\[
+\beta_1 = \log(\lambda_i^*) - \log(\lambda_i),
+\]</span> where <span class="math inline">\(\lambda_i^*\)</span> is the expected count at <span class="math inline">\(x_i + 1\)</span>.</li>
+<li>Therefore, <span class="math inline">\(e^{\beta_1}\)</span> is the <strong>incidence rate ratio (IRR)</strong>, the multiplicative change in expected counts for a unit increase in <span class="math inline">\(x_i\)</span>.</li>
+<li>Covariate effects are <strong>multiplicative</strong>, not additive, on the original count scale.</li>
+</ul>
+<hr>
+</section>
+<section id="motivating-example-cancer-incidence-in-ohio" class="level3">
+<h3 class="anchored" data-anchor-id="motivating-example-cancer-incidence-in-ohio">Motivating Example: Cancer Incidence in Ohio</h3>
+<p>We analyze <strong>lung cancer mortality</strong> data across 88 counties in Ohio, stratified by sex and race.</p>
+<p><strong>Variables:</strong></p>
+<ul>
+<li><span class="math inline">\(death_{stk}\)</span>: number of lung cancer deaths for population stratum <span class="math inline">\(k\)</span> in county <span class="math inline">\(s\)</span> during year <span class="math inline">\(t\)</span>,</li>
+<li><span class="math inline">\(sex_k\)</span>: 1 = female, 0 = male,</li>
+<li><span class="math inline">\(race_k\)</span>: 1 = white, 0 = non-white,</li>
+<li><span class="math inline">\(year_t\)</span>: 1–9 (1980–1988),</li>
+<li><span class="math inline">\(pop_{stk}\)</span>: population at risk.</li>
+</ul>
+<p><strong>Research Questions:</strong></p>
+<ul>
+<li><p>How do sex and race affect lung cancer death counts?</p></li>
+<li><p>How much variation exists between counties?</p></li>
+<li><p>Can we estimate county-level risks (small-area estimation)?</p></li>
+</ul>
+<p>We will fit a random-intercept Poisson regression model with a log link:</p>
+<p><span class="math display">\[
+\log E(death_{stk} \mid \theta_s) = \beta_0 + \beta_1 I_{\text{sex} = \text{female}} + \beta_2 I_{\text{race} = \text{white}} + \beta_3 \, \text{year}_t + \theta_s,
+\]</span></p>
+<p>where <span class="math inline">\(\theta_s \sim N(0, \tau^2)\)</span> represents county-level random intercepts, and <code>logpop</code> is included as an <strong>offset</strong> to model lung cancer death rates rather than raw counts.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>cancer <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">paste0</span>(<span class="st">"data/ohio_cancer.RDS"</span>))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(cancer)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  county sex race year death   pop
+1      1   1    1    1     6  8912
+2      1   1    1    2     5  9139
+3      1   1    1    3     8  9455
+4      1   1    1    4     5  9876
+5      1   1    1    5     8 10281
+6      1   1    1    6     5 10876</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create offset for population at risk</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>cancer<span class="sc">$</span>logpop <span class="ot">&lt;-</span> <span class="fu">log</span>(cancer<span class="sc">$</span>pop)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit random-intercept Poisson model</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>fit_poisson <span class="ot">&lt;-</span> <span class="fu">glmer</span>(</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  death <span class="sc">~</span> <span class="fu">offset</span>(logpop) <span class="sc">+</span> <span class="fu">factor</span>(sex) <span class="sc">+</span> <span class="fu">factor</span>(race) <span class="sc">+</span> year <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> county),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> poisson,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> cancer)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+ - Rescale variables?</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_poisson)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generalized linear mixed model fit by maximum likelihood (Laplace
+  Approximation) [glmerMod]
+ Family: poisson  ( log )
+Formula: death ~ offset(logpop) + factor(sex) + factor(race) + year +  
+    (1 | county)
+   Data: cancer
+
+     AIC      BIC   logLik deviance df.resid 
+ 26905.9  26940.4 -13447.9  26895.9     7387 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-6.6678 -0.5699 -0.2176  0.3900 10.5059 
+
+Random effects:
+ Groups Name        Variance Std.Dev.
+ county (Intercept) 0.0416   0.204   
+Number of obs: 7392, groups:  county, 88
+
+Fixed effects:
+                Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)   -7.7949302  0.0234154 -332.90  &lt; 2e-16 ***
+factor(sex)2  -1.1021170  0.0070715 -155.85  &lt; 2e-16 ***
+factor(race)2 -0.0474948  0.0103257   -4.60 4.23e-06 ***
+year           0.0366854  0.0005224   70.22  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) fctr(s)2 fctr(r)2
+factor(sx)2 -0.077                  
+factor(rc)2 -0.005 -0.005           
+year        -0.278 -0.002   -0.036  
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+Model is nearly unidentifiable: very large eigenvalue
+ - Rescale variables?</code></pre>
+</div>
+</div>
+<p>The warning <em>“Model is nearly unidentifiable: very large eigenvalue – Rescale variables?”</em> indicates potential numerical instability due to variables on very different scales or high collinearity among predictors. Although the model converged, it is recommended to <strong>center or rescale continuous variables (e.g., <code>year</code>)</strong> to improve numerical conditioning and ensure stable parameter estimation.</p>
+<hr>
+<p><strong>Model Interpretations</strong></p>
+<p>Fixed Effects:</p>
+<ul>
+<li><p><strong>Intercept (</strong><span class="math inline">\(\hat{\beta}_0 = -7.79\)</span>):<br>
+This is the <strong>baseline log death rate</strong> for non-white males in the reference year, in an average county.<br>
+Converting to a rate:<br>
+<span class="math display">\[
+\exp(-7.79) \approx 0.00041,
+\]</span> which is about 41 deaths per 100,000 people.</p></li>
+<li><p><strong>Sex (female) (</strong><span class="math inline">\(\hat{\beta}_1 = -1.10\)</span>):<br>
+Holding race, year, and county constant, females have <strong>67% fewer deaths</strong> compared to males:<br>
+<span class="math display">\[
+\exp(-1.10) \approx 0.33.
+\]</span></p></li>
+<li><p><strong>Race (white) (</strong><span class="math inline">\(\hat{\beta}_2 = -0.047\)</span>):<br>
+White individuals have about <strong>5% fewer deaths</strong> compared to non-white individuals:<br>
+<span class="math display">\[
+\exp(-0.047) \approx 0.95.
+\]</span></p></li>
+<li><p><strong>Year (</strong><span class="math inline">\(\hat{\beta}_3 = 0.0367\)</span>):<br>
+Each year is associated with a <strong>3.7% increase</strong> in lung cancer death rates, holding all other variables constant:<br>
+<span class="math display">\[
+\exp(0.0367) \approx 1.037.
+\]</span></p></li>
+</ul>
+<p>Random Effects:</p>
+<ul>
+<li><strong>County-level variation (</strong><span class="math inline">\(\hat{\tau} = 0.204\)</span>):<br>
+The standard deviation of county-specific deviations in log death rates is 0.204.<br>
+The middle 95% of counties have baseline log rates within: <span class="math display">\[
+-7.79 \pm 1.96 \cdot 0.204 = (-8.19, -7.39),
+\]</span> which corresponds to rates ranging from approximately 0.00027 to 0.00061 per person.</li>
+</ul>
+<hr>
+</section>
+<section id="overdispersion-of-the-poisson-assumption.-rcolorizeskip-red" class="level3">
+<h3 class="anchored" data-anchor-id="overdispersion-of-the-poisson-assumption.-rcolorizeskip-red">Overdispersion of the Poisson Assumption. <code>rcolorize("SKIP", "RED")</code></h3>
+<ul>
+<li><p>In Poisson, the assumption <span class="math inline">\(E(y_i) = V(y_i)\)</span> is often violated!</p></li>
+<li><p>One can add an additional <u>overdispersion parameter</u> also called a <u>scale parameter</u>.</p></li>
+<li><p>One can adjust the parameter variance by this scale parameter. This is called the <span style="color: red;">quasi-poisson</span> model.</p>
+<p><span class="math display">\[
+\hat{\mathbf{\beta}} \sim N(\mathbf{\beta}, I(\mathbf{\beta})^{-1} \phi)
+\]</span></p></li>
+<li><p>Fitting a quasi-poisson in GLM. Note: <code>glmer()</code> does not support a <code>quasipoisson</code> family — quasi-likelihood does not extend cleanly to the numerical integration used to fit random effects — so the scale-parameter adjustment is illustrated below with a standard (non-mixed) Poisson GLM rather than a GLMM.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>glm_quasi <span class="ot">=</span> <span class="fu">glm</span>(death <span class="sc">~</span> <span class="fu">offset</span>(logpop) <span class="sc">+</span> <span class="fu">factor</span>(sex) <span class="sc">+</span> <span class="fu">factor</span>(race) <span class="sc">+</span> year,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">family =</span> quasipoisson,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> cancer)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(glm_quasi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = death ~ offset(logpop) + factor(sex) + factor(race) + 
+    year, family = quasipoisson, data = cancer)
+
+Coefficients:
+                Estimate Std. Error  t value Pr(&gt;|t|)    
+(Intercept)   -7.6886326  0.0092386 -832.233   &lt;2e-16 ***
+factor(sex)2  -1.0983692  0.0087951 -124.885   &lt;2e-16 ***
+factor(race)2  0.0440971  0.0124503    3.542    4e-04 ***
+year           0.0357040  0.0006493   54.987   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for quasipoisson family taken to be 1.546573)
+
+    Null deviance: 43628  on 7391  degrees of freedom
+Residual deviance: 11323  on 7388  degrees of freedom
+AIC: NA
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary"><span style="color: purple;">Summary</span></h2>
+<table class="table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Section</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>What is the model?</strong></td>
+<td>A <strong>Generalized Linear Mixed Model (GLMM)</strong> extends GLMs by including <strong>random effects</strong> to account for correlations within clusters (e.g., subjects, counties). <br> The general form is: <br> <span class="math inline">\(g(E[y_{ij}|\theta_i]) = \beta_0 + x_{ij}'\beta + \theta_i\)</span>, where <span class="math inline">\(\theta_i \sim N(0, \tau^2)\)</span>.</td>
+</tr>
+<tr class="even">
+<td><strong>Motivation</strong></td>
+<td>Standard GLMs assume independent observations. In real-world data, observations are often <strong>correlated</strong> (e.g., repeated measures, cluster data). Ignoring this leads to <strong>biased standard errors</strong> and <strong>invalid inference</strong>. GLMMs address this by modeling cluster-level variability.</td>
+</tr>
+<tr class="odd">
+<td><strong>Model Components</strong></td>
+<td><strong>1. Random component:</strong> Distribution from the exponential family (e.g., Binomial, Poisson). <br> <strong>2. Systematic component:</strong> Linear predictor <span class="math inline">\(\eta_{ij} = \beta_0 + x_{ij}' \beta + \theta_i\)</span>. <br> <strong>3. Link function:</strong> <span class="math inline">\(g(\cdot)\)</span> connects the mean response to the predictor.</td>
+</tr>
+<tr class="even">
+<td><strong>Likelihood</strong></td>
+<td>The joint likelihood involves both fixed and random effects: <br> <span class="math inline">\(L(\beta, \tau^2 | y) = \prod_i \int \left( \prod_j [y_{ij} | \theta_i] \right) [\theta_i] d\theta_i\)</span>. <br> Because this integral is difficult to solve, <strong>numerical approximation</strong> (Laplace or adaptive quadrature) is used.</td>
+</tr>
+<tr class="odd">
+<td><strong>Interpretation</strong></td>
+<td>Fixed effects (<span class="math inline">\(\beta_j\)</span>): Population-level effects. <br> Random effects (<span class="math inline">\(\theta_i\)</span>): Group-specific deviations. <br> <strong>GLM vs.&nbsp;GLMM:</strong> GLMs provide <strong>population-averaged</strong> effects, while GLMMs provide <strong>conditional</strong> (subject-specific) effects.</td>
+</tr>
+<tr class="even">
+<td><strong>Example: Crossover</strong></td>
+<td>Logistic GLMM with a random intercept: <span class="math inline">\(logit P(y_{ij}=1) = \beta_0 + \beta_1 \cdot \text{trt}_{ij} + \beta_2 \cdot \text{period}_{ij} + \beta_3 (\text{trt}\times \text{period})_{ij} + \theta_i\)</span>. <br> Highlights how ignoring correlation biases treatment effects.</td>
+</tr>
+<tr class="odd">
+<td><strong>Model Comparisons</strong></td>
+<td><strong>LRT:</strong> Compares nested models via <span class="math inline">\(\lambda_{LR} = -2 ( l_{reduced} - l_{full} ) \sim \chi^2_{df}\)</span>. <br> <strong>AIC/BIC:</strong> <span class="math inline">\(AIC = -2 l(\hat{\beta}) + 2p\)</span>, lower values indicate better fit with complexity penalty.</td>
+</tr>
+<tr class="even">
+<td><strong>Poisson Regression</strong></td>
+<td>For count data: <span class="math inline">\(y_i \sim \text{Poisson}(\lambda_i)\)</span>, with <span class="math inline">\(log(\lambda_i) = \beta_0 + x_i'\beta\)</span>. <br> <strong>Offsets:</strong> Used to model rates: <span class="math inline">\(log E(y_i) = log(N_i) + x_i' \beta\)</span>. <br> <span class="math inline">\(e^{\beta_j}\)</span> = <strong>Incidence Rate Ratio (IRR)</strong>, a multiplicative change in expected counts.</td>
+</tr>
+<tr class="odd">
+<td><strong>Ohio Cancer Example</strong></td>
+<td>Random-intercept Poisson GLMM: <span class="math inline">\(log E(death_{stk} | \theta_s) = \beta_0 + \beta_1 \text{sex} + \beta_2 \text{race} + \beta_3 \text{year} + \theta_s + \log(pop_{stk})\)</span>. <br> Demonstrates county-level heterogeneity and interpretation of IRRs for sex, race, and year.</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./Module_2B_GLM.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Module 2B Generalized Linear Models</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./Module_2D_GLMMs.html" class="pagination-link">
+        <span class="nav-page-text">Module 2D Generalized Linear Mixed Models</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>
