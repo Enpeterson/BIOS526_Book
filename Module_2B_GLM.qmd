@@ -167,8 +167,7 @@ When modeling **rates** rather than raw counts, it is critical to account for th
 -   This motivates the use of an **offset term**: $$
     \log(\theta_i) = \log(N_i) + X_i \beta,
     $$.
-    
-    
+
 ------------------------------------------------------------------------
 
 ### Poisson Overdispersion
@@ -185,12 +184,11 @@ $$
 Var(y_i) > E(y_i).
 $$
 
-This can lead to:
-- Standard errors that are too small  
-- Confidence intervals that are too narrow  
-- p-values that are too optimistic  
+This can lead to: - Standard errors that are too small\
+- Confidence intervals that are too narrow\
+- p-values that are too optimistic
 
----
+------------------------------------------------------------------------
 
 #### How to Check for Overdispersion
 
@@ -200,9 +198,9 @@ $$
 \hat{\phi} = \frac{\text{Residual Deviance}}{\text{Residual Degrees of Freedom}}
 $$
 
-- If $\hat{\phi} \approx 1$, the equidispersion assumption holds.  
-- If $\hat{\phi} > 1.5$, the data are likely overdispersed.  
-- If $\hat{\phi} < 1$, underdispersion may be present (less common).  
+-   If $\hat{\phi} \approx 1$, the equidispersion assumption holds.\
+-   If $\hat{\phi} > 1.5$, the data are likely overdispersed.\
+-   If $\hat{\phi} < 1$, underdispersion may be present (less common).
 
 In R:
 
@@ -210,7 +208,7 @@ In R:
 # Calculate dispersion statistic
 deviance(fit_poisson) / df.residual(fit_poisson)
 ```
-    
+
 ------------------------------------------------------------------------
 
 #### Remedies for Overdispersion
@@ -223,8 +221,8 @@ $$
 Var(y_i) = \phi \cdot \theta_i
 $$
 
-- Implemented in R with `family = quasipoisson`.  
-- Coefficient estimates remain the same as Poisson, but **standard errors are corrected**.
+-   Implemented in R with `family = quasipoisson`.\
+-   Coefficient estimates remain the same as Poisson, but **standard errors are corrected**.
 
 ```{r}
 fit_quasi <- glm(events ~ age_group + male + tobacco,
@@ -234,8 +232,6 @@ fit_quasi <- glm(events ~ age_group + male + tobacco,
 summary(fit_quasi)
 
 ```
-    
-    
 
 ------------------------------------------------------------------------
 
@@ -249,16 +245,15 @@ The Poisson model is similar to the binomial model for count data but is applied
 
 ------------------------------------------------------------------------
 
-
 ## `r colorize("Summary", "purple")`
 
 | **Section**            | **Description**                                                                                                                                                                                                                          |
-|-------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **What is the model?** | **Poisson Regression:** Models count data ($y_i = 0,1,2,...$) assuming $y_i \sim \text{Poisson}(\theta_i)$, where $E(y_i) = \theta_i$ and $Var(y_i) = \theta_i$. The mean count is linked to predictors by $\log(\theta_i) = X_i \beta$. |
 | **Link Function**      | Uses the **log link**, $g(\theta_i) = \log(\theta_i)$, mapping $(0, \infty) \rightarrow (-\infty, \infty)$. Coefficients represent changes in the log of the expected count.                                                             |
 | **Interpretation**     | $e^{\beta_j}$ is the **incidence rate ratio (IRR)**: the multiplicative change in the expected count for a one-unit increase in $X_j$, holding other variables constant.                                                                 |
 | **Offsets**            | Adjusts for **population-at-risk** or exposure time. The model becomes $\log(\theta_i) = \log(N_i) + X_i \beta$, where $\log(N_i)$ is an offset term (not estimated).                                                                    |
 | **Model Assumptions**  | \- Counts are independent. <br> - Mean equals variance (no overdispersion). <br> - Correct link function (log).                                                                                                                          |
-| **Overdispersion**     | Check using **dispersion statistic** ($\hat{\phi} = \tfrac{\text{Residual Deviance}}{\text{df}}$). <br> If $\hat{\phi} > 1$, use: <br> \- **Quasi-Poisson** (adjusts SEs). <br> \- **Negative Binomial** (flexible variance).            |
+| **Overdispersion**     | Check using **dispersion statistic** ($\hat{\phi} = \tfrac{\text{Residual Deviance}}{\text{df}}$). <br> If $\hat{\phi} > 1$, use: <br> - **Quasi-Poisson** (adjusts SEs). <br> - **Negative Binomial** (flexible variance).              |
 | **Key Differences**    | \- Use **Binomial/Logistic** regression when counts are bounded by a number of trials ($n_i$). <br> - Use **Poisson** regression when counts have no natural upper limit and represent rates or events over a fixed exposure.            |
 | **Example Findings**   | Tobacco use increases preterm birth rate by **42%** ($IRR \approx 1.42$), while mothers aged 25--29 have a **22% lower** rate ($IRR \approx 0.78$) compared to ages 15--19.                                                              |

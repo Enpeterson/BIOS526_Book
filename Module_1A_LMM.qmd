@@ -412,7 +412,7 @@ where
 ::: {.callout-note style="color: blue" appearance="minimal" icon="false"}
 ## Intraclass Correlation
 
-Note that the within-group covariance is $Cov(y_{ij}, y_{ij'}) = \tau^2$. So the correlation between observations within the same group is: 
+Note that the between group variance is $Cov(y_{ij}, y_{ij'}) = \tau^2$. So the correlation between observations within the same group is: 
 
 $$
 \rho = Corr(y_{ij}, y_{ij'}) = \frac{\tau^2}{\tau^2 + \sigma^2} \text{ for all }j \neq j'. 

@@ -5,7 +5,7 @@ project:
 book:
   title: "BIOS 526 Modern Regression Analysis"
   author: "Emily Peterson"
-  date: "Fall 2025"
+  date: "Fall 2026"
   chapters:
     - index.qmd
     - Module_0_MLR.qmd
