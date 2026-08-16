@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.3.433">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Module 1B Linear Mixed Models – BIOS 526 Modern Regression Analysis</title>
+<title>BIOS 526 Modern Regression Analysis - Module 1B Linear Mixed Models</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -22,7 +22,7 @@ ul.task-list li input[type="checkbox"] {
 }
 /* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -33,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -81,13 +81,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   "collapse-after": 3,
   "panel-placement": "start",
   "type": "textbox",
-  "limit": 50,
-  "keyboard-shortcut": [
-    "f",
-    "/",
-    "s"
-  ],
-  "show-item-context": false,
+  "limit": 20,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -96,42 +90,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
-    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
     "search-submit-button-title": "Submit",
     "search-label": "Search"
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -142,13 +108,13 @@ window.Quarto = {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_1B_LMM.html">Module 1B Linear Mixed Models</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
-        </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./Module_1B_LMM.html">Module 1B Linear Mixed Models</a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -157,7 +123,7 @@ window.Quarto = {
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">BIOS 526 Modern Regression Analysis</a> 
@@ -305,7 +271,7 @@ window.Quarto = {
     </ul>
     </div>
 </nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
@@ -346,10 +312,13 @@ window.Quarto = {
   </div>
   
 
-
 </header>
 
-
+<div class="cell" data-hide="true">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'dplyr' was built under R version 4.4.3</code></pre>
+</div>
+</div>
 <section id="partial-pooling-blup-borrowing-strength-across-subjects" class="level2">
 <h2 class="anchored" data-anchor-id="partial-pooling-blup-borrowing-strength-across-subjects">Partial Pooling (BLUP): Borrowing Strength Across Subjects</h2>
 <p>In random–intercept models, each subject’s intercept <span class="math inline">\(\theta_i\)</span> is not estimated in isolation. Instead, it is <u><strong>partially pooled</strong></u> toward the overall mean: subjects with few observations (or noisier measurements) get <strong>more shrinkage</strong>, while subjects with lots of precise data get <strong>less</strong>. The resulting predictor is the <strong>Best Linear Unbiased Predictor (BLUP)</strong>—a weighted average of the subject’s sample mean and the population mean, with weights determined by the <strong>within-subject variance</strong> <span class="math inline">\(\sigma^2\)</span>, the <strong>between-subject variance</strong> <span class="math inline">\(\tau^2\)</span>, and the subject’s sample size <span class="math inline">\(n_i\)</span>. This “borrowing strength” across subjects stabilizes subject-specific estimates and improves out-of-sample prediction.</p>
@@ -590,161 +559,154 @@ Thus, good variance-component estimates (via REML) improve the estimation and in
 <h3 class="anchored" data-anchor-id="motivating-example-the-tlc-data-contd">Motivating Example: The TLC data cont’d</h3>
 <p>Let’s revisit the TLC data example to see how these ideas work in practice.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nlme) </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gridExtra) </span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom.mixed)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(modelsummary)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>tlcdata <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/tlc.RDS"</span>)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>tlc.ml <span class="ot">&lt;-</span> <span class="fu">lmer</span>(lead <span class="sc">~</span> week <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>id), <span class="at">data =</span> tlcdata, <span class="at">REML =</span> F) <span class="co">#ML approach for vars</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>tlc.reml <span class="ot">&lt;-</span> <span class="fu">lmer</span>(lead <span class="sc">~</span> week <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>id),  <span class="at">data =</span> tlcdata) <span class="co">#REML (Default) approach for vars</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed effects with CIs</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>fixef_ml   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.ml,   <span class="at">effects =</span> <span class="st">"fixed"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>fixef_reml <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.reml, <span class="at">effects =</span> <span class="st">"fixed"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Random-effect variances (tau^2, sigma^2)</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>ran_ml   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.ml,   <span class="at">effects =</span> <span class="st">"ran_pars"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>ran_reml <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.reml, <span class="at">effects =</span> <span class="st">"ran_pars"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Compact side-by-side summary (coef tables + fit stats)</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">modelsummary</span>(</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="st">"ML (full LL)"</span> <span class="ot">=</span> tlc.ml, <span class="st">"REML (restricted LL)"</span> <span class="ot">=</span> tlc.reml),</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate  =</span> <span class="st">"{estimate}"</span>,</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">statistic =</span> <span class="st">"SE = {std.error}, t = {statistic}"</span>,</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">gof_map =</span> <span class="fu">c</span>(<span class="st">"AIC"</span>,<span class="st">"BIC"</span>,<span class="st">"logLik"</span>,<span class="st">"REMLcrit"</span>,<span class="st">"ICC"</span>),</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">stars =</span> <span class="cn">FALSE</span>, <span class="at">fmt =</span> <span class="dv">3</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nlme) </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gridExtra) </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom.mixed)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(modelsummary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'modelsummary' was built under R version 4.4.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tlcdata <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/tlc.RDS"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>tlc.ml <span class="ot">&lt;-</span> <span class="fu">lmer</span>(lead <span class="sc">~</span> week <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>id), <span class="at">data =</span> tlcdata, <span class="at">REML =</span> F) <span class="co">#ML approach for vars</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>tlc.reml <span class="ot">&lt;-</span> <span class="fu">lmer</span>(lead <span class="sc">~</span> week <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>id),  <span class="at">data =</span> tlcdata) <span class="co">#REML (Default) approach for vars</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed effects with CIs</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>fixef_ml   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.ml,   <span class="at">effects =</span> <span class="st">"fixed"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>fixef_reml <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.reml, <span class="at">effects =</span> <span class="st">"fixed"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Random-effect variances (tau^2, sigma^2)</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>ran_ml   <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.ml,   <span class="at">effects =</span> <span class="st">"ran_pars"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>ran_reml <span class="ot">&lt;-</span> <span class="fu">tidy</span>(tlc.reml, <span class="at">effects =</span> <span class="st">"ran_pars"</span>, <span class="at">conf.int =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Compact side-by-side summary (coef tables + fit stats)</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">modelsummary</span>(</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="st">"ML (full LL)"</span> <span class="ot">=</span> tlc.ml, <span class="st">"REML (restricted LL)"</span> <span class="ot">=</span> tlc.reml),</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimate  =</span> <span class="st">"{estimate}"</span>,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">statistic =</span> <span class="st">"SE = {std.error}, t = {statistic}"</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">gof_map =</span> <span class="fu">c</span>(<span class="st">"AIC"</span>,<span class="st">"BIC"</span>,<span class="st">"logLik"</span>,<span class="st">"REMLcrit"</span>,<span class="st">"ICC"</span>),</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">stars =</span> <span class="cn">FALSE</span>, <span class="at">fmt =</span> <span class="dv">3</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
+
 <!-- preamble start -->
 
+    <script src="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.js"></script>
+
     <script>
-
-      function styleCell_89ure22jsbmbv8rdltng(i, j, css_id) {
-          var table = document.getElementById("tinytable_89ure22jsbmbv8rdltng");
-          var cell = table.querySelector(`[data-row="${i}"][data-col="${j}"]`);
-          if (cell) {
-              console.log(`Styling cell at (${i}, ${j}) with class ${css_id}`);
-              cell.classList.add(css_id);
-          } else {
-              console.warn(`Cell at (${i}, ${j}) not found.`);
-          }
-      }
-      function spanCell_89ure22jsbmbv8rdltng(i, j, rowspan, colspan) {
-        var table = document.getElementById("tinytable_89ure22jsbmbv8rdltng");
-        const targetCell = table.querySelector(`[data-row="${i}"][data-col="${j}"]`);
-        if (!targetCell) {
-          console.warn(`Cell at (${i}, ${j}) not found.`);
-        }
-
-        // Get all cells that need to be removed
-        const cellsToRemove = [];
-        for (let r = 0; r < rowspan; r++) {
-          for (let c = 0; c < colspan; c++) {
-            if (r === 0 && c === 0) continue; // Skip the target cell
-            const cell = table.querySelector(`[data-row="${i + r}"][data-col="${j + c}"]`);
-            if (cell) {
-              cellsToRemove.push(cell);
-            }
-          }
-        }
-
-        // Remove all cells
-        cellsToRemove.forEach(cell => cell.remove());
-
-        // Set rowspan and colspan of the target cell if it exists
-        if (targetCell) {
-          targetCell.rowSpan = rowspan;
-          targetCell.colSpan = colspan;
-        }
-      }
+      // Create table-specific functions using external factory
+      const tableFns_9qgm312g3qhm94ea2qg6 = TinyTable.createTableFunctions("tinytable_9qgm312g3qhm94ea2qg6");
       // tinytable span after
       window.addEventListener('load', function () {
           var cellsToStyle = [
             // tinytable style arrays after
-          { positions: [ { i: '8', j: 1 }, { i: '8', j: 2 },  ], css_id: 'tinytable_css_do3h1b91kovsjvjbd57t',}, 
-          { positions: [ { i: '2', j: 1 }, { i: '3', j: 1 }, { i: '4', j: 1 }, { i: '1', j: 1 }, { i: '6', j: 1 }, { i: '7', j: 1 }, { i: '3', j: 2 }, { i: '5', j: 1 }, { i: '1', j: 2 }, { i: '2', j: 2 }, { i: '7', j: 2 }, { i: '4', j: 2 }, { i: '5', j: 2 }, { i: '6', j: 2 },  ], css_id: 'tinytable_css_e3r6je9lyhsc4eo52ikl',}, 
-          { positions: [ { i: '0', j: 1 }, { i: '0', j: 2 },  ], css_id: 'tinytable_css_hdi8pr9w0hubmpqbdile',}, 
-          { positions: [ { i: '8', j: 0 },  ], css_id: 'tinytable_css_5zwq9ymtu02gf2sxhywt',}, 
-          { positions: [ { i: '1', j: 0 }, { i: '2', j: 0 }, { i: '3', j: 0 }, { i: '4', j: 0 }, { i: '5', j: 0 }, { i: '6', j: 0 }, { i: '7', j: 0 },  ], css_id: 'tinytable_css_9w4g2l2hyd4neniqf18o',}, 
-          { positions: [ { i: '0', j: 0 },  ], css_id: 'tinytable_css_42jizi9syx9euzsi72z5',}, 
+          { positions: [ { i: '12', j: 2 }, { i: '12', j: 3 } ], css_id: 'tinytable_css_hh5c5mskf9a1tjuppimy',}, 
+          { positions: [ { i: '8', j: 2 }, { i: '8', j: 3 } ], css_id: 'tinytable_css_xb3dtvu4euuwv9lx6a7t',}, 
+          { positions: [ { i: '1', j: 2 }, { i: '2', j: 2 }, { i: '3', j: 2 }, { i: '4', j: 2 }, { i: '5', j: 2 }, { i: '6', j: 2 }, { i: '7', j: 2 }, { i: '9', j: 2 }, { i: '10', j: 2 }, { i: '11', j: 2 }, { i: '1', j: 3 }, { i: '2', j: 3 }, { i: '3', j: 3 }, { i: '4', j: 3 }, { i: '5', j: 3 }, { i: '6', j: 3 }, { i: '7', j: 3 }, { i: '9', j: 3 }, { i: '10', j: 3 }, { i: '11', j: 3 } ], css_id: 'tinytable_css_e98otpmp52w211ohwuo9',}, 
+          { positions: [ { i: '0', j: 2 }, { i: '0', j: 3 } ], css_id: 'tinytable_css_5kpy1wbn67yiydkxauzr',}, 
+          { positions: [ { i: '12', j: 1 } ], css_id: 'tinytable_css_4pqw8echv44chg3uhmg1',}, 
+          { positions: [ { i: '8', j: 1 } ], css_id: 'tinytable_css_6028buexybx2osvnd7qd',}, 
+          { positions: [ { i: '1', j: 1 }, { i: '2', j: 1 }, { i: '3', j: 1 }, { i: '4', j: 1 }, { i: '5', j: 1 }, { i: '6', j: 1 }, { i: '7', j: 1 }, { i: '9', j: 1 }, { i: '10', j: 1 }, { i: '11', j: 1 } ], css_id: 'tinytable_css_4k6uqod2sms113glc2mz',}, 
+          { positions: [ { i: '0', j: 1 } ], css_id: 'tinytable_css_evt6oyjp2dyeeo51rnjx',}, 
           ];
 
           // Loop over the arrays to style the cells
           cellsToStyle.forEach(function (group) {
               group.positions.forEach(function (cell) {
-                  styleCell_89ure22jsbmbv8rdltng(cell.i, cell.j, group.css_id);
+                  tableFns_9qgm312g3qhm94ea2qg6.styleCell(cell.i, cell.j, group.css_id);
               });
           });
       });
     </script>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.css">
     <style>
-      /* tinytable css entries after */
-      .table td.tinytable_css_do3h1b91kovsjvjbd57t, .table th.tinytable_css_do3h1b91kovsjvjbd57t { text-align: center; border-bottom: solid #d3d8dc 0.1em; }
-      .table td.tinytable_css_e3r6je9lyhsc4eo52ikl, .table th.tinytable_css_e3r6je9lyhsc4eo52ikl { text-align: center; }
-      .table td.tinytable_css_hdi8pr9w0hubmpqbdile, .table th.tinytable_css_hdi8pr9w0hubmpqbdile { text-align: center; border-top: solid #d3d8dc 0.1em; border-bottom: solid #d3d8dc 0.05em; }
-      .table td.tinytable_css_5zwq9ymtu02gf2sxhywt, .table th.tinytable_css_5zwq9ymtu02gf2sxhywt { text-align: left; border-bottom: solid #d3d8dc 0.1em; }
-      .table td.tinytable_css_9w4g2l2hyd4neniqf18o, .table th.tinytable_css_9w4g2l2hyd4neniqf18o { text-align: left; }
-      .table td.tinytable_css_42jizi9syx9euzsi72z5, .table th.tinytable_css_42jizi9syx9euzsi72z5 { text-align: left; border-top: solid #d3d8dc 0.1em; border-bottom: solid #d3d8dc 0.05em; }
+    /* tinytable css entries after */
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_hh5c5mskf9a1tjuppimy, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_hh5c5mskf9a1tjuppimy {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.08em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_xb3dtvu4euuwv9lx6a7t, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_xb3dtvu4euuwv9lx6a7t {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_e98otpmp52w211ohwuo9, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_e98otpmp52w211ohwuo9 { text-align: center }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_5kpy1wbn67yiydkxauzr, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_5kpy1wbn67yiydkxauzr {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 1; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.08em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: center }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_4pqw8echv44chg3uhmg1, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_4pqw8echv44chg3uhmg1 {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.08em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_6028buexybx2osvnd7qd, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_6028buexybx2osvnd7qd {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 0; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.1em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_4k6uqod2sms113glc2mz, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_4k6uqod2sms113glc2mz { text-align: left }
+    #tinytable_9qgm312g3qhm94ea2qg6 td.tinytable_css_evt6oyjp2dyeeo51rnjx, #tinytable_9qgm312g3qhm94ea2qg6 th.tinytable_css_evt6oyjp2dyeeo51rnjx {  position: relative; --border-bottom: 1; --border-left: 0; --border-right: 0; --border-top: 1; --line-color-bottom: var(--tt-line-color); --line-color-left: var(--tt-line-color); --line-color-right: var(--tt-line-color); --line-color-top: var(--tt-line-color); --line-width-bottom: 0.05em; --line-width-left: 0.1em; --line-width-right: 0.1em; --line-width-top: 0.08em; --trim-bottom-left: 0%; --trim-bottom-right: 0%; --trim-left-bottom: 0%; --trim-left-top: 0%; --trim-right-bottom: 0%; --trim-right-top: 0%; --trim-top-left: 0%; --trim-top-right: 0%; ; text-align: left }
     </style>
     <div class="container">
-      <table class="table table-borderless" id="tinytable_89ure22jsbmbv8rdltng" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing="true">
-        <thead>
+      <table class="tinytable" id="tinytable_9qgm312g3qhm94ea2qg6" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing="true">
         
+        <thead>
               <tr>
-                <th scope="col" data-row="0" data-col="0"> </th>
-                <th scope="col" data-row="0" data-col="1">ML (full LL)</th>
-                <th scope="col" data-row="0" data-col="2">REML (restricted LL)</th>
+                <th scope="col" data-row="0" data-col="1"> </th>
+                <th scope="col" data-row="0" data-col="2">ML (full LL)</th>
+                <th scope="col" data-row="0" data-col="3">REML (restricted LL)</th>
               </tr>
         </thead>
         
         <tbody>
                 <tr>
-                  <td data-row="1" data-col="0">(Intercept)</td>
-                  <td data-row="1" data-col="1">22.976</td>
+                  <td data-row="1" data-col="1">(Intercept)</td>
                   <td data-row="1" data-col="2">22.976</td>
+                  <td data-row="1" data-col="3">22.976</td>
                 </tr>
                 <tr>
-                  <td data-row="2" data-col="0"></td>
-                  <td data-row="2" data-col="1">SE = 0.700, t = 32.822</td>
-                  <td data-row="2" data-col="2">SE = 0.703, t = 32.683</td>
+                  <td data-row="2" data-col="1"></td>
+                  <td data-row="2" data-col="2">SE = 0.700, t = 32.822</td>
+                  <td data-row="2" data-col="3">SE = 0.703, t = 32.683</td>
                 </tr>
                 <tr>
-                  <td data-row="3" data-col="0">week</td>
-                  <td data-row="3" data-col="1">-0.401</td>
+                  <td data-row="3" data-col="1">week</td>
                   <td data-row="3" data-col="2">-0.401</td>
+                  <td data-row="3" data-col="3">-0.401</td>
                 </tr>
                 <tr>
-                  <td data-row="4" data-col="0"></td>
-                  <td data-row="4" data-col="1">SE = 0.122, t = -3.287</td>
-                  <td data-row="4" data-col="2">SE = 0.122, t = -3.281</td>
+                  <td data-row="4" data-col="1"></td>
+                  <td data-row="4" data-col="2">SE = 0.122, t = -3.287</td>
+                  <td data-row="4" data-col="3">SE = 0.122, t = -3.281</td>
                 </tr>
                 <tr>
-                  <td data-row="5" data-col="0">SD (Intercept id)</td>
-                  <td data-row="5" data-col="1">5.411</td>
-                  <td data-row="5" data-col="2">5.444</td>
+                  <td data-row="5" data-col="1">sd__(Intercept)</td>
+                  <td data-row="5" data-col="2">5.411</td>
+                  <td data-row="5" data-col="3">5.444</td>
                 </tr>
                 <tr>
-                  <td data-row="6" data-col="0"></td>
-                  <td data-row="6" data-col="1">SE = , t =</td>
+                  <td data-row="6" data-col="1"></td>
                   <td data-row="6" data-col="2">SE = , t =</td>
+                  <td data-row="6" data-col="3">SE = , t =</td>
                 </tr>
                 <tr>
-                  <td data-row="7" data-col="0">SD (Observations)</td>
-                  <td data-row="7" data-col="1">5.819</td>
-                  <td data-row="7" data-col="2">5.829</td>
+                  <td data-row="7" data-col="1">sd__Observation</td>
+                  <td data-row="7" data-col="2">5.819</td>
+                  <td data-row="7" data-col="3">5.829</td>
                 </tr>
                 <tr>
-                  <td data-row="8" data-col="0"></td>
-                  <td data-row="8" data-col="1">SE = , t =</td>
+                  <td data-row="8" data-col="1"></td>
                   <td data-row="8" data-col="2">SE = , t =</td>
+                  <td data-row="8" data-col="3">SE = , t =</td>
+                </tr>
+                <tr>
+                  <td data-row="9" data-col="1">AIC</td>
+                  <td data-row="9" data-col="2">2701.6</td>
+                  <td data-row="9" data-col="3">2703.1</td>
+                </tr>
+                <tr>
+                  <td data-row="10" data-col="1">BIC</td>
+                  <td data-row="10" data-col="2">2717.5</td>
+                  <td data-row="10" data-col="3">2719.0</td>
+                </tr>
+                <tr>
+                  <td data-row="11" data-col="1">Log.Lik.</td>
+                  <td data-row="11" data-col="2">-1346.781</td>
+                  <td data-row="11" data-col="3">-1347.531</td>
+                </tr>
+                <tr>
+                  <td data-row="12" data-col="1">REMLcrit</td>
+                  <td data-row="12" data-col="2"></td>
+                  <td data-row="12" data-col="3">2695</td>
                 </tr>
         </tbody>
       </table>
@@ -754,7 +716,7 @@ Thus, good variance-component estimates (via REML) improve the estimation and in
 </div>
 <hr>
 <p><span style="color: purple;">Summary</span></p>
-<table class="caption-top table">
+<table class="table">
 <colgroup>
 <col style="width: 43%">
 <col style="width: 56%">
@@ -833,7 +795,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -865,50 +838,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-    }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
-      }
-    }
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+  function tippyHover(el, contentFn) {
     const config = {
       allowHTML: true,
+      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -918,17 +852,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start',
+      placement: 'bottom-start'
     };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -940,130 +865,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
-          }
-        }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
-        }
-        return container.innerHTML
-      } else {
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(note);
-        }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      // TODO in 1.5, we should make sure this works without a callout special case
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
-      }
-    }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
-          }
-        } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
-            if (note !== null) {
-              const html = processXRef(id, note);
-              instance.setContent(html);
-            } 
-          }).finally(() => {
-            instance.enable();
-            instance.show();
-          });
-        }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
+      return note.innerHTML;
     });
   }
       let selectedAnnoteEl;
@@ -1107,7 +909,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
-            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -1133,32 +934,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -1220,18 +995,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./Module_1A_LMM.html" class="pagination-link" aria-label="Module 1A Linear Mixed Models">
+      <a href="./Module_1A_LMM.html" class="pagination-link">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Module 1A Linear Mixed Models</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./Module_1C_LMM.html" class="pagination-link" aria-label="Module 1C Random Intercepts and Slopes">
+      <a href="./Module_1C_LMM.html" class="pagination-link">
         <span class="nav-page-text">Module 1C Random Intercepts and Slopes</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
 </div> <!-- /content -->
-
 
 
 
