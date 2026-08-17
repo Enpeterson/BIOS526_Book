@@ -41,20 +41,12 @@ format:
   html:
     theme: cosmo
     css: style.css
-  pdf:
-    documentclass: scrreprt
-    include-in-header: 
-      - text: |
-            \usepackage{amsfonts}
-            \usepackage{amsmath}
-            \usepackage{mdframed}
-            \usepackage{lipsum}
-            \usepackage{tcolorbox}
-            \usepackage{xcolor}
-            \usepackage[thickspace,nobracket]{actuarialangle}
-            \usepackage{tikz}
-            \usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
-   
+
+# The pdf format was removed 2026-08-16: it failed on a missing LaTeX
+# package (tabularray.sty) and broke every render. The book is published
+# as a website, so html is the only format needed. To restore the pdf
+# config, see git history for this file.
+
 
 editor: visual
 
